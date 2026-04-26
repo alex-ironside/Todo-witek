@@ -1,7 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { login } from '../firebase/auth';
+import StorageModeToggle from './StorageModeToggle';
+import type { StorageMode } from '../services/storageMode';
 
-export default function Login() {
+interface Props {
+  mode: StorageMode;
+  onModeChange: (mode: StorageMode) => void;
+}
+
+export default function Login({ mode, onModeChange }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,8 +29,14 @@ export default function Login() {
 
   return (
     <div className="login">
-      <h1>Sign in</h1>
-      <p className="muted">Existing accounts only. No public sign-up.</p>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h1>Sign in</h1>
+        <StorageModeToggle mode={mode} onChange={onModeChange} />
+      </div>
+      <p className="muted">
+        Existing accounts only. No public sign-up. Switch to <strong>Local</strong>{' '}
+        to use the app without an account.
+      </p>
       <form className="col" onSubmit={onSubmit}>
         <input
           type="email"

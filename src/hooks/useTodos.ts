@@ -1,29 +1,28 @@
 import { useEffect, useState } from 'react';
-import { observeUserTodos } from '../firebase/todos';
-import type { Todo } from '../types';
+import type { Todo, TodoRepository } from '../types';
 
 export interface TodosState {
   todos: Todo[];
   loading: boolean;
 }
 
-export const useTodos = (userId: string | null | undefined): TodosState => {
+export const useTodos = (repo: TodoRepository | null): TodosState => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
+    if (!repo) {
       setTodos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const off = observeUserTodos(userId, (next) => {
+    const off = repo.observe((next) => {
       setTodos(next);
       setLoading(false);
     });
     return off;
-  }, [userId]);
+  }, [repo]);
 
   return { todos, loading };
 };

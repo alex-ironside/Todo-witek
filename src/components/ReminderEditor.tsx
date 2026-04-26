@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { updateTodo } from '../firebase/todos';
+import { useRepo } from '../hooks/RepoContext';
 import { formatRemindAt } from '../utils/dateUtils';
 import type { Todo, Reminder } from '../types';
 
@@ -15,6 +15,7 @@ const newReminderId = (): string => {
 };
 
 export default function ReminderEditor({ todo }: Props) {
+  const repo = useRepo();
   const [when, setWhen] = useState('');
   const reminders: Reminder[] = todo.reminders || [];
 
@@ -28,11 +29,11 @@ export default function ReminderEditor({ todo }: Props) {
       { id: newReminderId(), remindAt: ts, fired: false },
     ];
     setWhen('');
-    await updateTodo(todo.id, { reminders: next });
+    await repo.update(todo.id, { reminders: next });
   };
 
   const removeReminder = async (id: string) => {
-    await updateTodo(todo.id, {
+    await repo.update(todo.id, {
       reminders: reminders.filter((r) => r.id !== id),
     });
   };

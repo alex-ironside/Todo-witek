@@ -1,11 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { createTodo } from '../firebase/todos';
+import { useRepo } from '../hooks/RepoContext';
 
-interface Props {
-  userId: string;
-}
-
-export default function TodoForm({ userId }: Props) {
+export default function TodoForm() {
+  const repo = useRepo();
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -16,8 +13,7 @@ export default function TodoForm({ userId }: Props) {
     setBusy(true);
     setError('');
     try {
-      // Offline-safe: Firestore queues this write and resolves on reconnect.
-      await createTodo(userId, { title: title.trim(), reminders: [] });
+      await repo.create({ title: title.trim(), reminders: [] });
       setTitle('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save');

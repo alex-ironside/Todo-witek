@@ -13,7 +13,7 @@ import {
   type QuerySnapshot,
 } from 'firebase/firestore';
 import { getDb } from './app';
-import type { Todo, NewTodo, Reminder, Unsubscribe } from '../types';
+import type { Todo, NewTodo, TodoUpdate, Unsubscribe } from '../types';
 
 const COL = 'todos';
 
@@ -36,12 +36,6 @@ export const createTodo = async (
   });
   return ref.id;
 };
-
-export type TodoUpdate = Partial<{
-  title: string;
-  done: boolean;
-  reminders: Reminder[];
-}>;
 
 export const updateTodo = (id: string, fields: TodoUpdate): Promise<void> =>
   updateDoc(todoRef(id), { ...fields, updatedAt: serverTimestamp() });

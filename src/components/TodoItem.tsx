@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toggleDone, updateTodo, deleteTodo } from '../firebase/todos';
+import { useRepo } from '../hooks/RepoContext';
 import ReminderEditor from './ReminderEditor';
 import type { Todo } from '../types';
 
@@ -8,13 +8,14 @@ interface Props {
 }
 
 export default function TodoItem({ todo }: Props) {
+  const repo = useRepo();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
   const [open, setOpen] = useState(false);
 
   const save = async () => {
     if (draft.trim() && draft !== todo.title) {
-      await updateTodo(todo.id, { title: draft.trim() });
+      await repo.update(todo.id, { title: draft.trim() });
     }
     setEditing(false);
   };
@@ -26,7 +27,7 @@ export default function TodoItem({ todo }: Props) {
           <input
             type="checkbox"
             checked={!!todo.done}
-            onChange={(e) => toggleDone(todo.id, e.target.checked)}
+            onChange={(e) => repo.toggleDone(todo.id, e.target.checked)}
             aria-label={`Mark "${todo.title}" as done`}
             style={{ width: 'auto' }}
           />
@@ -51,7 +52,7 @@ export default function TodoItem({ todo }: Props) {
           <button className="ghost" onClick={() => setEditing((v) => !v)}>
             {editing ? 'Cancel' : 'Edit'}
           </button>
-          <button className="danger" onClick={() => deleteTodo(todo.id)}>
+          <button className="danger" onClick={() => repo.delete(todo.id)}>
             Delete
           </button>
         </div>
