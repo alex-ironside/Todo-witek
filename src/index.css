@@ -104,12 +104,31 @@ input, select {
 }
 .reminder.fired { opacity: 0.6; }
 
-.draggable { cursor: grab; }
-.draggable.dragging { opacity: 0.4; }
-.draggable.drop-target > .todo {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+.sortable-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 8px;
 }
+.sortable-row__content { flex: 1; min-width: 0; }
+.sortable-row__content > .todo { margin-bottom: 0; }
+
+/* touch-action: none lets dnd-kit's TouchSensor own the gesture instead
+   of the browser scrolling the page. */
+.drag-handle {
+  touch-action: none;
+  cursor: grab;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 8px;
+  border-radius: 8px;
+  user-select: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+.drag-handle:active { cursor: grabbing; background: var(--panel-2); }
+.drag-handle:focus-visible { outline: 2px solid var(--accent); }
 
 .login {
   max-width: 360px;

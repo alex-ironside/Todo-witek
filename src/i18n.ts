@@ -42,6 +42,7 @@ export const t = {
   todosEmpty: 'Brak zadań. Dodaj jedno powyżej.',
 
   // TodoItem
+  dragHandle: 'Przeciągnij, aby zmienić kolejność',
   markDone: (title: string) => `Oznacz „${title}" jako wykonane`,
   showReminders: 'Przypomnienia',
   hideReminders: 'Ukryj',
