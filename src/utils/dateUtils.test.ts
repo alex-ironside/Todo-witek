@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isDue, nextDueReminder, formatRemindAt } from './dateUtils.js';
+import { isDue, nextDueReminder, formatRemindAt } from './dateUtils';
+import type { Reminder } from '../types';
 
 describe('dateUtils', () => {
   describe('isDue', () => {
@@ -22,12 +23,14 @@ describe('dateUtils', () => {
     });
 
     it('returns null when all reminders are fired', () => {
-      const reminders = [{ remindAt: 500, fired: true }];
+      const reminders: Reminder[] = [
+        { id: 'a', remindAt: 500, fired: true },
+      ];
       expect(nextDueReminder(reminders, 1000)).toBeNull();
     });
 
     it('returns the soonest unfired future reminder', () => {
-      const reminders = [
+      const reminders: Reminder[] = [
         { id: 'a', remindAt: 5000, fired: false },
         { id: 'b', remindAt: 3000, fired: false },
         { id: 'c', remindAt: 4000, fired: false },
@@ -36,7 +39,7 @@ describe('dateUtils', () => {
     });
 
     it('skips fired reminders', () => {
-      const reminders = [
+      const reminders: Reminder[] = [
         { id: 'a', remindAt: 3000, fired: true },
         { id: 'b', remindAt: 5000, fired: false },
       ];

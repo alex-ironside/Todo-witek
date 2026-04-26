@@ -32,7 +32,7 @@ Todo PWA backed by Firebase. React + Vite, deploys to GitHub Pages.
    - (For push) Enable **Cloud Messaging** and generate a Web Push certificate.
 
 3. **Fill in your Firebase config**
-   - `src/firebase/config.js` — paste the web SDK config object and the VAPID key.
+   - `src/firebase/config.ts` — paste the web SDK config object and the VAPID key.
    - `public/firebase-messaging-sw.js` — paste the same `firebaseConfig`
      (it can't be imported from JS at build time because the SW is loaded
      directly by the browser).
@@ -84,22 +84,23 @@ Users opt in by clicking "Enable cross-device push" in the app.
 
 ```
 src/
+  types.ts             ← domain types (Todo, Reminder, ...)
   firebase/
-    config.js          ← user-supplied keys
-    app.js             ← single Firebase app + Firestore (offline cache)
-    auth.js            ← login/logout/observe
-    todos.js           ← Firestore CRUD for todos
-    messaging.js       ← FCM init/getToken
-    pushTokens.js      ← saves device token under user
+    config.ts          ← user-supplied keys
+    app.ts             ← single Firebase app + Firestore (offline cache)
+    auth.ts            ← login/logout/observe
+    todos.ts           ← Firestore CRUD for todos
+    messaging.ts       ← FCM init/getToken
+    pushTokens.ts      ← saves device token under user
   hooks/
-    useAuth.js         ← subscribe to auth state
-    useTodos.js        ← subscribe to user's todos
-    useOnlineStatus.js ← navigator.onLine wrapper
+    useAuth.ts         ← subscribe to auth state
+    useTodos.ts        ← subscribe to user's todos
+    useOnlineStatus.ts ← navigator.onLine wrapper
   services/
-    reminderScheduler.js ← schedules in-app notifications
-    notificationService.js ← Notification API wrapper
+    reminderScheduler.ts ← schedules in-app notifications
+    notificationService.ts ← Notification API wrapper
   components/          ← Login, TodoForm, TodoList, TodoItem, ReminderEditor
-  utils/dateUtils.js   ← pure helpers
+  utils/dateUtils.ts   ← pure helpers
 public/
   firebase-messaging-sw.js ← FCM background handler
 functions/             ← optional Cloud Function for cross-device push

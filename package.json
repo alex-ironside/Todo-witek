@@ -6,10 +6,11 @@
   "homepage": "https://alex-ironside.github.io/todo-witek/",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "deploy": "vite build && gh-pages -d dist"
   },
@@ -29,6 +30,7 @@
     "eslint": "^9.9.1",
     "gh-pages": "^6.1.1",
     "jsdom": "^25.0.0",
+    "typescript": "^5.5.4",
     "vite": "^5.4.2",
     "vite-plugin-pwa": "^0.20.5",
     "vitest": "^2.0.5"

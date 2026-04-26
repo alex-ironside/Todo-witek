@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { login } from '../firebase/auth.js';
+import { useState, type FormEvent } from 'react';
+import { login } from '../firebase/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -7,14 +7,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
       await login(email, password);
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setBusy(false);
     }

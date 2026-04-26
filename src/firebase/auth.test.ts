@@ -5,16 +5,17 @@ const signOut = vi.fn();
 const onAuthStateChanged = vi.fn();
 
 vi.mock('firebase/auth', () => ({
-  signInWithEmailAndPassword: (...args) => signInWithEmailAndPassword(...args),
-  signOut: (...args) => signOut(...args),
-  onAuthStateChanged: (...args) => onAuthStateChanged(...args),
+  signInWithEmailAndPassword: (...args: unknown[]) =>
+    signInWithEmailAndPassword(...args),
+  signOut: (...args: unknown[]) => signOut(...args),
+  onAuthStateChanged: (...args: unknown[]) => onAuthStateChanged(...args),
 }));
 
-vi.mock('./app.js', () => ({
+vi.mock('./app', () => ({
   getFirebaseAuth: () => ({ __auth: true }),
 }));
 
-const importAuth = async () => await import('./auth.js');
+const importAuth = async () => await import('./auth');
 
 describe('auth wrapper', () => {
   beforeEach(() => {
@@ -34,7 +35,7 @@ describe('auth wrapper', () => {
   });
 
   it('logout delegates to signOut with auth instance', async () => {
-    signOut.mockResolvedValue();
+    signOut.mockResolvedValue(undefined);
     const { logout } = await importAuth();
     await logout();
     expect(signOut).toHaveBeenCalledWith({ __auth: true });

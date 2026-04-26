@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createReminderScheduler } from './reminderScheduler.js';
+import { createReminderScheduler } from './reminderScheduler';
+import type { Todo } from '../types';
+
+const todo = (overrides: Partial<Todo>): Todo => ({
+  id: 't',
+  ownerId: 'u',
+  title: 'T',
+  done: false,
+  reminders: [],
+  ...overrides,
+});
 
 describe('reminderScheduler', () => {
   beforeEach(() => {
@@ -16,11 +26,11 @@ describe('reminderScheduler', () => {
     const onFired = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'Past',
         reminders: [{ id: 'r1', remindAt: Date.now() - 1000, fired: false }],
-      },
+      }),
     ]);
     expect(notify).toHaveBeenCalledWith('Past', expect.any(Object));
     expect(onFired).toHaveBeenCalledWith('t1', 'r1');
@@ -31,11 +41,11 @@ describe('reminderScheduler', () => {
     const onFired = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'Future',
         reminders: [{ id: 'r1', remindAt: Date.now() + 5000, fired: false }],
-      },
+      }),
     ]);
     expect(notify).not.toHaveBeenCalled();
     vi.advanceTimersByTime(5000);
@@ -47,11 +57,11 @@ describe('reminderScheduler', () => {
     const notify = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired: vi.fn() });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'Done',
         reminders: [{ id: 'r1', remindAt: Date.now() - 1000, fired: true }],
-      },
+      }),
     ]);
     expect(notify).not.toHaveBeenCalled();
   });
@@ -60,11 +70,11 @@ describe('reminderScheduler', () => {
     const notify = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired: vi.fn() });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'A',
         reminders: [{ id: 'r1', remindAt: Date.now() + 5000, fired: false }],
-      },
+      }),
     ]);
     scheduler.sync([]);
     vi.advanceTimersByTime(10000);
@@ -75,11 +85,11 @@ describe('reminderScheduler', () => {
     const notify = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired: vi.fn() });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'A',
         reminders: [{ id: 'r1', remindAt: Date.now() + 1000, fired: false }],
-      },
+      }),
     ]);
     scheduler.stop();
     vi.advanceTimersByTime(2000);
@@ -90,12 +100,12 @@ describe('reminderScheduler', () => {
     const notify = vi.fn();
     const scheduler = createReminderScheduler({ notify, onFired: vi.fn() });
     scheduler.sync([
-      {
+      todo({
         id: 't1',
         title: 'Done todo',
         done: true,
         reminders: [{ id: 'r1', remindAt: Date.now() - 1000, fired: false }],
-      },
+      }),
     ]);
     expect(notify).not.toHaveBeenCalled();
   });

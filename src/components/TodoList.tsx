@@ -1,6 +1,12 @@
-import TodoItem from './TodoItem.jsx';
+import TodoItem from './TodoItem';
+import type { Todo } from '../types';
 
-export default function TodoList({ todos, loading }) {
+interface Props {
+  todos: Todo[];
+  loading: boolean;
+}
+
+export default function TodoList({ todos, loading }: Props) {
   if (loading) return <p className="muted">Loading…</p>;
   if (!todos.length) return <p className="muted">No todos yet. Add one above.</p>;
   return (

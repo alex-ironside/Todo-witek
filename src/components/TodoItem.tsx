@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { toggleDone, updateTodo, deleteTodo } from '../firebase/todos.js';
-import ReminderEditor from './ReminderEditor.jsx';
+import { toggleDone, updateTodo, deleteTodo } from '../firebase/todos';
+import ReminderEditor from './ReminderEditor';
+import type { Todo } from '../types';
 
-export default function TodoItem({ todo }) {
+interface Props {
+  todo: Todo;
+}
+
+export default function TodoItem({ todo }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
   const [open, setOpen] = useState(false);

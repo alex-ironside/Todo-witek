@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { observeUserTodos } from '../firebase/todos.js';
+import { observeUserTodos } from '../firebase/todos';
+import type { Todo } from '../types';
 
-export const useTodos = (userId) => {
-  const [todos, setTodos] = useState([]);
+export interface TodosState {
+  todos: Todo[];
+  loading: boolean;
+}
+
+export const useTodos = (userId: string | null | undefined): TodosState => {
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

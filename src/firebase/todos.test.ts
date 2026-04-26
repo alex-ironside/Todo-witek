@@ -1,38 +1,65 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const collection = vi.fn((_db, name) => ({ __col: name }));
-const doc = vi.fn((_db, col, id) => ({ __doc: `${col}/${id}` }));
+const collection = vi.fn();
+const doc = vi.fn();
 const addDoc = vi.fn();
 const updateDoc = vi.fn();
 const deleteDoc = vi.fn();
 const onSnapshot = vi.fn();
-const query = vi.fn((...args) => ({ __query: args }));
-const where = vi.fn((field, op, val) => ({ __where: [field, op, val] }));
-const orderBy = vi.fn((field, dir) => ({ __orderBy: [field, dir] }));
-const serverTimestamp = vi.fn(() => '__SERVER_TS__');
+const query = vi.fn();
+const where = vi.fn();
+const orderBy = vi.fn();
+const serverTimestamp = vi.fn();
+
+collection.mockImplementation((_db: unknown, name: string) => ({ __col: name }));
+doc.mockImplementation((_db: unknown, col: string, id: string) => ({
+  __doc: `${col}/${id}`,
+}));
+query.mockImplementation((...args: unknown[]) => ({ __query: args }));
+where.mockImplementation((field: string, op: string, val: unknown) => ({
+  __where: [field, op, val],
+}));
+orderBy.mockImplementation((field: string, dir: string) => ({
+  __orderBy: [field, dir],
+}));
+serverTimestamp.mockReturnValue('__SERVER_TS__');
 
 vi.mock('firebase/firestore', () => ({
-  collection: (...a) => collection(...a),
-  doc: (...a) => doc(...a),
-  addDoc: (...a) => addDoc(...a),
-  updateDoc: (...a) => updateDoc(...a),
-  deleteDoc: (...a) => deleteDoc(...a),
-  onSnapshot: (...a) => onSnapshot(...a),
-  query: (...a) => query(...a),
-  where: (...a) => where(...a),
-  orderBy: (...a) => orderBy(...a),
-  serverTimestamp: (...a) => serverTimestamp(...a),
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
 }));
 
-vi.mock('./app.js', () => ({
+vi.mock('./app', () => ({
   getDb: () => ({ __db: true }),
 }));
 
-const importTodos = async () => await import('./todos.js');
+const importTodos = async () => await import('./todos');
 
 describe('todos repository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serverTimestamp.mockReturnValue('__SERVER_TS__');
+    collection.mockImplementation((_db: unknown, name: string) => ({
+      __col: name,
+    }));
+    doc.mockImplementation((_db: unknown, col: string, id: string) => ({
+      __doc: `${col}/${id}`,
+    }));
+    query.mockImplementation((...args: unknown[]) => ({ __query: args }));
+    where.mockImplementation((field: string, op: string, val: unknown) => ({
+      __where: [field, op, val],
+    }));
+    orderBy.mockImplementation((field: string, dir: string) => ({
+      __orderBy: [field, dir],
+    }));
   });
 
   it('createTodo writes a doc owned by the user with done=false', async () => {
@@ -55,8 +82,8 @@ describe('todos repository', () => {
   });
 
   it('updateTodo merges fields and refreshes updatedAt', async () => {
-    const { updateTodo } = await importTodos();
-    await updateTodo('todo-1', { title: 'New' });
+    const { updateTodo: update } = await importTodos();
+    await update('todo-1', { title: 'New' });
     expect(doc).toHaveBeenCalledWith({ __db: true }, 'todos', 'todo-1');
     expect(updateDoc).toHaveBeenCalledWith(
       { __doc: 'todos/todo-1' },
@@ -74,17 +101,22 @@ describe('todos repository', () => {
   });
 
   it('deleteTodo deletes by id', async () => {
-    const { deleteTodo } = await importTodos();
-    await deleteTodo('todo-1');
+    const { deleteTodo: del } = await importTodos();
+    await del('todo-1');
     expect(deleteDoc).toHaveBeenCalledWith({ __doc: 'todos/todo-1' });
   });
 
   it('observeUserTodos subscribes with where(ownerId) and orderBy(createdAt)', async () => {
     const unsub = vi.fn();
-    onSnapshot.mockImplementation((_q, next) => {
-      next({ docs: [{ id: 't1', data: () => ({ title: 'A' }) }] });
-      return unsub;
-    });
+    onSnapshot.mockImplementation(
+      (
+        _q: unknown,
+        next: (snap: { docs: { id: string; data: () => unknown }[] }) => void
+      ) => {
+        next({ docs: [{ id: 't1', data: () => ({ title: 'A' }) }] });
+        return unsub;
+      }
+    );
     const cb = vi.fn();
     const { observeUserTodos } = await importTodos();
     const off = observeUserTodos('user-1', cb);

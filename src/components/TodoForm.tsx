@@ -1,12 +1,16 @@
-import { useState } from 'react';
-import { createTodo } from '../firebase/todos.js';
+import { useState, type FormEvent } from 'react';
+import { createTodo } from '../firebase/todos';
 
-export default function TodoForm({ userId }) {
+interface Props {
+  userId: string;
+}
+
+export default function TodoForm({ userId }: Props) {
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     setBusy(true);
@@ -16,7 +20,7 @@ export default function TodoForm({ userId }) {
       await createTodo(userId, { title: title.trim(), reminders: [] });
       setTitle('');
     } catch (err) {
-      setError(err.message || 'Could not save');
+      setError(err instanceof Error ? err.message : 'Could not save');
     } finally {
       setBusy(false);
     }

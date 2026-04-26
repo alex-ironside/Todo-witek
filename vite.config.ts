@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -31,7 +32,6 @@ export default defineConfig({
           },
         ],
       },
-      // We provide a custom firebase-messaging-sw.js in /public; PWA SW is separate.
       strategies: 'generateSW',
       workbox: {
         navigateFallbackDenylist: [/^\/firebase-messaging-sw\.js$/],
@@ -41,7 +41,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
+    setupFiles: './src/test/setup.ts',
     css: false,
   },
 });

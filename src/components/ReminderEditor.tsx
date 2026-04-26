@@ -1,20 +1,29 @@
-import { useState } from 'react';
-import { updateTodo } from '../firebase/todos.js';
-import { formatRemindAt } from '../utils/dateUtils.js';
+import { useState, type FormEvent } from 'react';
+import { updateTodo } from '../firebase/todos';
+import { formatRemindAt } from '../utils/dateUtils';
+import type { Todo, Reminder } from '../types';
 
-const newReminderId = () =>
-  (crypto.randomUUID?.() || Math.random().toString(36).slice(2));
+interface Props {
+  todo: Todo;
+}
 
-export default function ReminderEditor({ todo }) {
+const newReminderId = (): string => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2);
+};
+
+export default function ReminderEditor({ todo }: Props) {
   const [when, setWhen] = useState('');
-  const reminders = todo.reminders || [];
+  const reminders: Reminder[] = todo.reminders || [];
 
-  const addReminder = async (e) => {
+  const addReminder = async (e: FormEvent) => {
     e.preventDefault();
     if (!when) return;
     const ts = new Date(when).getTime();
     if (Number.isNaN(ts)) return;
-    const next = [
+    const next: Reminder[] = [
       ...reminders,
       { id: newReminderId(), remindAt: ts, fired: false },
     ];
@@ -22,7 +31,7 @@ export default function ReminderEditor({ todo }) {
     await updateTodo(todo.id, { reminders: next });
   };
 
-  const removeReminder = async (id) => {
+  const removeReminder = async (id: string) => {
     await updateTodo(todo.id, {
       reminders: reminders.filter((r) => r.id !== id),
     });

@@ -1,33 +1,35 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  type Firestore,
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { firebaseConfig, isConfigured } from './config.js';
+import { getAuth, type Auth } from 'firebase/auth';
+import { firebaseConfig, isConfigured } from './config';
 
 // Single source of truth for the Firebase app instance.
 // Idempotent so HMR / multiple imports don't re-initialize.
-const createApp = () => {
+
+let _app: FirebaseApp | undefined;
+let _db: Firestore | undefined;
+let _auth: Auth | undefined;
+
+const createApp = (): FirebaseApp => {
   if (!isConfigured()) {
     throw new Error(
-      'Firebase config is missing. Fill src/firebase/config.js before running the app.'
+      'Firebase config is missing. Fill src/firebase/config.ts before running the app.'
     );
   }
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
 };
 
-let _app;
-let _db;
-let _auth;
-
-export const getFirebaseApp = () => {
+export const getFirebaseApp = (): FirebaseApp => {
   if (!_app) _app = createApp();
   return _app;
 };
 
-export const getDb = () => {
+export const getDb = (): Firestore => {
   if (!_db) {
     // Offline-first: IndexedDB cache + multi-tab support.
     // Writes made offline are queued and replayed on reconnect.
@@ -40,7 +42,7 @@ export const getDb = () => {
   return _db;
 };
 
-export const getFirebaseAuth = () => {
+export const getFirebaseAuth = (): Auth => {
   if (!_auth) _auth = getAuth(getFirebaseApp());
   return _auth;
 };

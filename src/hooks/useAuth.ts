@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { observeAuth } from '../firebase/auth.js';
+import type { User } from 'firebase/auth';
+import { observeAuth } from '../firebase/auth';
 
-export const useAuth = () => {
-  const [user, setUser] = useState(null);
+export interface AuthState {
+  user: User | null;
+  loading: boolean;
+}
+
+export const useAuth = (): AuthState => {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

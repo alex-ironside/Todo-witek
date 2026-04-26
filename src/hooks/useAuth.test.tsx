@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import type { User } from 'firebase/auth';
 
 const observeAuth = vi.fn();
-vi.mock('../firebase/auth.js', () => ({
-  observeAuth: (...a) => observeAuth(...a),
+vi.mock('../firebase/auth', () => ({
+  observeAuth: (...a: unknown[]) => observeAuth(...a),
 }));
 
-import { useAuth } from './useAuth.js';
+import { useAuth } from './useAuth';
 
 describe('useAuth', () => {
   beforeEach(() => {
@@ -21,14 +22,15 @@ describe('useAuth', () => {
   });
 
   it('updates user when observeAuth fires', () => {
-    let cb;
-    observeAuth.mockImplementation((fn) => {
+    let cb: (u: User | null) => void = () => {};
+    observeAuth.mockImplementation((fn: (u: User | null) => void) => {
       cb = fn;
       return () => {};
     });
     const { result } = renderHook(() => useAuth());
-    act(() => cb({ uid: 'u1', email: 'a@b.com' }));
-    expect(result.current.user).toEqual({ uid: 'u1', email: 'a@b.com' });
+    act(() => cb({ uid: 'u1', email: 'a@b.com' } as User));
+    expect(result.current.user?.uid).toBe('u1');
+    expect(result.current.user?.email).toBe('a@b.com');
     expect(result.current.loading).toBe(false);
   });
 

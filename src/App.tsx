@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useAuth } from './hooks/useAuth.js';
-import { useTodos } from './hooks/useTodos.js';
-import { useOnlineStatus } from './hooks/useOnlineStatus.js';
-import { logout } from './firebase/auth.js';
-import { updateTodo } from './firebase/todos.js';
-import { isConfigured, vapidKey } from './firebase/config.js';
-import { registerCurrentDeviceForPush } from './firebase/pushTokens.js';
-import { createReminderScheduler } from './services/reminderScheduler.js';
+import type { User } from 'firebase/auth';
+import { useAuth } from './hooks/useAuth';
+import { useTodos } from './hooks/useTodos';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { logout } from './firebase/auth';
+import { updateTodo } from './firebase/todos';
+import { isConfigured, vapidKey } from './firebase/config';
+import { registerCurrentDeviceForPush } from './firebase/pushTokens';
+import {
+  createReminderScheduler,
+  type ReminderScheduler,
+} from './services/reminderScheduler';
 import {
   requestNotificationPermission,
   showLocalNotification,
-} from './services/notificationService.js';
-import Login from './components/Login.jsx';
-import TodoForm from './components/TodoForm.jsx';
-import TodoList from './components/TodoList.jsx';
+} from './services/notificationService';
+import Login from './components/Login';
+import TodoForm from './components/TodoForm';
+import TodoList from './components/TodoList';
 
 export default function App() {
   if (!isConfigured()) {
@@ -23,7 +27,7 @@ export default function App() {
           <h1>Todo Witek</h1>
           <p>
             Firebase isn't configured yet. Fill in{' '}
-            <code>src/firebase/config.js</code> with your project's web SDK
+            <code>src/firebase/config.ts</code> with your project's web SDK
             config (and the matching values in{' '}
             <code>public/firebase-messaging-sw.js</code>) and reload.
           </p>
@@ -47,13 +51,18 @@ function AppInner() {
   return <Authenticated user={user} online={online} />;
 }
 
-function Authenticated({ user, online }) {
+interface AuthenticatedProps {
+  user: User;
+  online: boolean;
+}
+
+function Authenticated({ user, online }: AuthenticatedProps) {
   const { todos, loading } = useTodos(user.uid);
-  const schedulerRef = useRef(null);
+  const schedulerRef = useRef<ReminderScheduler | null>(null);
 
   // Marking a reminder as fired writes back to Firestore so other devices see it.
   const markFired = useMemo(
-    () => async (todoId, reminderId) => {
+    () => async (todoId: string, reminderId: string) => {
       const todo = todos.find((t) => t.id === todoId);
       if (!todo) return;
       const next = (todo.reminders || []).map((r) =>
@@ -73,9 +82,6 @@ function Authenticated({ user, online }) {
       });
     }
     schedulerRef.current.sync(todos);
-    return () => {
-      // Stop on unmount only; on every todos change we just resync.
-    };
   }, [todos, markFired]);
 
   useEffect(() => () => schedulerRef.current?.stop(), []);
@@ -101,7 +107,7 @@ function Authenticated({ user, online }) {
           <button
             className="primary"
             onClick={() =>
-              registerCurrentDeviceForPush(user.uid).catch((e) =>
+              registerCurrentDeviceForPush(user.uid).catch((e: Error) =>
                 alert(`Push setup failed: ${e.message}`)
               )
             }
