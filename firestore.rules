@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Only authenticated users can read/write their own todos.
+// A todo is "owned" by the user whose uid matches `ownerId` on the doc.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /todos/{todoId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner() {
+        return isSignedIn() && resource.data.ownerId == request.auth.uid;
+      }
+      function isCreatingOwn() {
+        return isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      }
+
+      allow read: if isOwner();
+      allow create: if isCreatingOwn();
+      // Updates must keep ownerId pinned to the same user.
+      allow update: if isOwner()
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner();
+    }
+
+    // FCM device tokens — one doc per token, scoped by user.
+    match /fcmTokens/{tokenId} {
+      allow read, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
