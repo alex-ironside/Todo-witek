@@ -1,23 +1,59 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRepo } from '../hooks/RepoContext';
 import ReminderEditor from './ReminderEditor';
 import type { Todo } from '../types';
+import { t } from '../i18n';
 
 interface Props {
   todo: Todo;
 }
+
+const CONFIRM_TIMEOUT_MS = 4000;
 
 export default function TodoItem({ todo }: Props) {
   const repo = useRepo();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(todo.title);
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
+  }, []);
+
+  const startEdit = () => {
+    setDraft(todo.title);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setDraft(todo.title);
+    setEditing(false);
+  };
 
   const save = async () => {
-    if (draft.trim() && draft !== todo.title) {
-      await repo.update(todo.id, { title: draft.trim() });
+    const next = draft.trim();
+    if (next && next !== todo.title) {
+      await repo.update(todo.id, { title: next });
     }
     setEditing(false);
+  };
+
+  const onDeleteClick = async () => {
+    if (!confirming) {
+      setConfirming(true);
+      confirmTimerRef.current = setTimeout(
+        () => setConfirming(false),
+        CONFIRM_TIMEOUT_MS
+      );
+      return;
+    }
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setConfirming(false);
+    await repo.delete(todo.id);
   };
 
   return (
@@ -28,32 +64,37 @@ export default function TodoItem({ todo }: Props) {
             type="checkbox"
             checked={!!todo.done}
             onChange={(e) => repo.toggleDone(todo.id, e.target.checked)}
-            aria-label={`Mark "${todo.title}" as done`}
+            aria-label={t.markDone(todo.title)}
             style={{ width: 'auto' }}
           />
           {editing ? (
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={save}
-              onKeyDown={(e) => e.key === 'Enter' && save()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') save();
+                else if (e.key === 'Escape') cancelEdit();
+              }}
               autoFocus
             />
           ) : (
-            <span className="title" onDoubleClick={() => setEditing(true)}>
+            <span className="title" onDoubleClick={startEdit}>
               {todo.title}
             </span>
           )}
         </label>
         <div className="row">
           <button className="ghost" onClick={() => setOpen((o) => !o)}>
-            {open ? 'Hide' : 'Reminders'}
+            {open ? t.hideReminders : t.showReminders}
           </button>
-          <button className="ghost" onClick={() => setEditing((v) => !v)}>
-            {editing ? 'Cancel' : 'Edit'}
+          <button
+            className="ghost"
+            onClick={editing ? cancelEdit : startEdit}
+          >
+            {editing ? t.cancel : t.edit}
           </button>
-          <button className="danger" onClick={() => repo.delete(todo.id)}>
-            Delete
+          <button className="danger" onClick={onDeleteClick}>
+            {confirming ? t.deleteConfirm : t.delete}
           </button>
         </div>
       </div>

@@ -95,4 +95,23 @@ describe('localTodoRepo', () => {
     expect(list[1].title).toBe('first');
     off();
   });
+
+  it('reorder sets positions according to the provided order', async () => {
+    const repo = createLocalTodoRepo();
+    const a = await repo.create({ title: 'A' });
+    const b = await repo.create({ title: 'B' });
+    const c = await repo.create({ title: 'C' });
+    await repo.reorder([a, b, c]);
+    const cb = vi.fn();
+    const off = repo.observe(cb);
+    const list = cb.mock.calls[0][0];
+    expect(list.map((t: { title: string }) => t.title)).toEqual(['A', 'B', 'C']);
+    off();
+  });
+
+  it('reorder ignores ids that are not in the list', async () => {
+    const repo = createLocalTodoRepo();
+    const a = await repo.create({ title: 'A' });
+    await expect(repo.reorder([a, 'ghost'])).resolves.toBeUndefined();
+  });
 });

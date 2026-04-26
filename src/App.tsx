@@ -24,6 +24,8 @@ import Login from './components/Login';
 import TodoForm from './components/TodoForm';
 import TodoList from './components/TodoList';
 import StorageModeToggle from './components/StorageModeToggle';
+import InstallButton from './components/InstallButton';
+import { t } from './i18n';
 
 export default function App() {
   const [mode, setMode] = useStorageMode();
@@ -47,15 +49,17 @@ function FirebaseNotConfigured({ mode, onModeChange }: ModeProps) {
     <div className="app">
       <div className="card">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h1>Todo Witek</h1>
-          <StorageModeToggle mode={mode} onChange={onModeChange} />
+          <h1>{t.brand}</h1>
+          <div className="row">
+            <InstallButton />
+            <StorageModeToggle mode={mode} onChange={onModeChange} />
+          </div>
         </div>
         <p>
-          Firebase isn't configured yet. Fill in{' '}
-          <code>src/firebase/config.ts</code> with your project's web SDK
-          config (and the matching values in{' '}
-          <code>public/firebase-messaging-sw.js</code>) and reload — or
-          switch to <strong>Local</strong> to use the app without it.
+          {t.notConfigured} <code>src/firebase/config.ts</code>{' '}
+          {t.notConfiguredAndIn}{' '}
+          <code>public/firebase-messaging-sw.js</code>
+          {t.notConfiguredEnd}
         </p>
       </div>
     </div>
@@ -76,7 +80,7 @@ function LocalApp({ mode, onModeChange }: ModeProps) {
         mode={mode}
         onModeChange={onModeChange}
         online={online}
-        identity="Local"
+        identity={t.identityLocal}
         signOut={null}
         repo={repo}
       />
@@ -93,7 +97,7 @@ function FirebaseApp({ mode, onModeChange }: ModeProps) {
   }, [user]);
 
   if (loading) {
-    return <div className="app"><p className="muted">Loading…</p></div>;
+    return <div className="app"><p className="muted">{t.loading}</p></div>;
   }
   if (!user) {
     return <Login mode={mode} onModeChange={onModeChange} />;
@@ -127,7 +131,7 @@ function FirebaseAuthenticated({
         mode={mode}
         onModeChange={onModeChange}
         online={online}
-        identity={user.email || 'Signed in'}
+        identity={user.email || t.loginTitle}
         signOut={() => logout()}
         repo={repo}
       >
@@ -137,16 +141,13 @@ function FirebaseAuthenticated({
               className="primary"
               onClick={() =>
                 registerCurrentDeviceForPush(user.uid).catch((e: Error) =>
-                  alert(`Push setup failed: ${e.message}`)
+                  alert(`${t.pushSetupFailed}: ${e.message}`)
                 )
               }
             >
-              Enable cross-device push
+              {t.pushEnable}
             </button>
-            <p className="muted">
-              Saves this device's FCM token so a Cloud Function can deliver
-              reminders even when the app is closed.
-            </p>
+            <p className="muted">{t.pushHint}</p>
           </div>
         )}
       </Shell>
@@ -177,19 +178,18 @@ function Shell({
   return (
     <div className="app">
       <div className="header">
-        <div className="brand">Todo Witek</div>
+        <div className="brand">{t.brand}</div>
         <div className="row">
+          <InstallButton />
           <StorageModeToggle mode={mode} onChange={onModeChange} />
           <span className="muted">{identity}</span>
           {signOut && (
-            <button className="ghost" onClick={signOut}>Sign out</button>
+            <button className="ghost" onClick={signOut}>{t.signOut}</button>
           )}
         </div>
       </div>
       {!online && mode === 'firebase' && (
-        <div className="banner warn">
-          Offline — changes are saved locally and will sync when you're back online.
-        </div>
+        <div className="banner warn">{t.offlineBanner}</div>
       )}
       <TodoForm />
       <TodoList todos={todos} loading={loading} />

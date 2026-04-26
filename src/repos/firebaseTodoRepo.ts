@@ -3,6 +3,7 @@ import {
   updateTodo,
   toggleDone,
   deleteTodo,
+  reorderTodos,
   observeUserTodos,
 } from '../firebase/todos';
 import type { TodoRepository } from '../types';
@@ -15,5 +16,6 @@ export const createFirebaseTodoRepo = (ownerId: string): TodoRepository => ({
   update: updateTodo,
   toggleDone,
   delete: deleteTodo,
+  reorder: reorderTodos,
   observe: (callback) => observeUserTodos(ownerId, callback),
 });

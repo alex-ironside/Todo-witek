@@ -13,6 +13,9 @@ export interface Todo {
   title: string;
   done: boolean;
   reminders: Reminder[];
+  // Lower position = appears earlier in the list. Optional for legacy
+  // todos created before reordering existed.
+  position?: number;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
@@ -23,6 +26,7 @@ export type TodoUpdate = Partial<{
   title: string;
   done: boolean;
   reminders: Reminder[];
+  position: number;
 }>;
 
 export type Unsubscribe = () => void;
@@ -34,5 +38,6 @@ export interface TodoRepository {
   update: (id: string, fields: TodoUpdate) => Promise<void>;
   toggleDone: (id: string, done: boolean) => Promise<void>;
   delete: (id: string) => Promise<void>;
+  reorder: (orderedIds: string[]) => Promise<void>;
   observe: (callback: (todos: Todo[]) => void) => Unsubscribe;
 }

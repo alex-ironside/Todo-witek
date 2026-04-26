@@ -31,20 +31,42 @@ const write = (todos: Todo[]): void => {
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
 };
 
+const sortByPosition = (todos: Todo[]): Todo[] =>
+  todos.slice().sort((a, b) => {
+    const pa = a.position ?? Number.POSITIVE_INFINITY;
+    const pb = b.position ?? Number.POSITIVE_INFINITY;
+    if (pa !== pb) return pa - pb;
+    const ca = typeof a.createdAt === 'number' ? a.createdAt : 0;
+    const cb = typeof b.createdAt === 'number' ? b.createdAt : 0;
+    return cb - ca;
+  });
+
+const minPosition = (todos: Todo[]): number => {
+  let min = 0;
+  for (const todo of todos) {
+    if (typeof todo.position === 'number' && todo.position < min) {
+      min = todo.position;
+    }
+  }
+  return min;
+};
+
 export const createLocalTodoRepo = (): TodoRepository => ({
   create: async ({ title, reminders = [] }: NewTodo): Promise<string> => {
     const id = newId();
     const now = Date.now();
+    const existing = read();
     const todo: Todo = {
       id,
       ownerId: 'local',
       title,
       done: false,
       reminders,
+      position: minPosition(existing) - 1,
       createdAt: now,
       updatedAt: now,
     };
-    write([todo, ...read()]);
+    write([todo, ...existing]);
     return id;
   },
 
@@ -68,11 +90,22 @@ export const createLocalTodoRepo = (): TodoRepository => ({
     write(read().filter((t) => t.id !== id));
   },
 
+  reorder: async (orderedIds: string[]): Promise<void> => {
+    const positionById = new Map(orderedIds.map((id, idx) => [id, idx]));
+    const now = Date.now();
+    write(
+      read().map((t) => {
+        const pos = positionById.get(t.id);
+        return pos === undefined ? t : { ...t, position: pos, updatedAt: now };
+      })
+    );
+  },
+
   observe: (callback: (todos: Todo[]) => void): Unsubscribe => {
-    callback(read());
-    const onChange = () => callback(read());
+    callback(sortByPosition(read()));
+    const onChange = () => callback(sortByPosition(read()));
     const onStorage = (e: StorageEvent) => {
-      if (e.key === LOCAL_TODOS_KEY) callback(read());
+      if (e.key === LOCAL_TODOS_KEY) callback(sortByPosition(read()));
     };
     window.addEventListener(CHANGE_EVENT, onChange);
     window.addEventListener('storage', onStorage);

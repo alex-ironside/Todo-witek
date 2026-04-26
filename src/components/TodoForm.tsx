@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useRepo } from '../hooks/RepoContext';
+import { t } from '../i18n';
 
 export default function TodoForm() {
   const repo = useRepo();
@@ -16,7 +17,7 @@ export default function TodoForm() {
       await repo.create({ title: title.trim(), reminders: [] });
       setTitle('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save');
+      setError(err instanceof Error ? err.message : t.todoSaveError);
     } finally {
       setBusy(false);
     }
@@ -25,13 +26,13 @@ export default function TodoForm() {
   return (
     <form className="card row" onSubmit={onSubmit}>
       <input
-        placeholder="Add a todo…"
+        placeholder={t.todoPlaceholder}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         disabled={busy}
       />
       <button className="primary" type="submit" disabled={busy || !title.trim()}>
-        Add
+        {t.todoAdd}
       </button>
       {error && <div className="error">{error}</div>}
     </form>

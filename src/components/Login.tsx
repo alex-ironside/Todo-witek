@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { login } from '../firebase/auth';
 import StorageModeToggle from './StorageModeToggle';
+import InstallButton from './InstallButton';
 import type { StorageMode } from '../services/storageMode';
+import { t } from '../i18n';
 
 interface Props {
   mode: StorageMode;
@@ -21,7 +23,7 @@ export default function Login({ mode, onModeChange }: Props) {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t.loginFailed);
     } finally {
       setBusy(false);
     }
@@ -30,18 +32,18 @@ export default function Login({ mode, onModeChange }: Props) {
   return (
     <div className="login">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Sign in</h1>
-        <StorageModeToggle mode={mode} onChange={onModeChange} />
+        <h1>{t.loginTitle}</h1>
+        <div className="row">
+          <InstallButton />
+          <StorageModeToggle mode={mode} onChange={onModeChange} />
+        </div>
       </div>
-      <p className="muted">
-        Existing accounts only. No public sign-up. Switch to <strong>Local</strong>{' '}
-        to use the app without an account.
-      </p>
+      <p className="muted">{t.loginHint}</p>
       <form className="col" onSubmit={onSubmit}>
         <input
           type="email"
           autoComplete="email"
-          placeholder="Email"
+          placeholder={t.emailPlaceholder}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -49,14 +51,14 @@ export default function Login({ mode, onModeChange }: Props) {
         <input
           type="password"
           autoComplete="current-password"
-          placeholder="Password"
+          placeholder={t.passwordPlaceholder}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
         {error && <div className="error">{error}</div>}
         <button className="primary" type="submit" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? t.loginSubmitBusy : t.loginSubmit}
         </button>
       </form>
     </div>

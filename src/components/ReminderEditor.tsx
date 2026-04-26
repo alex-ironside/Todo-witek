@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useRepo } from '../hooks/RepoContext';
 import { formatRemindAt } from '../utils/dateUtils';
 import type { Todo, Reminder } from '../types';
+import { t } from '../i18n';
 
 interface Props {
   todo: Todo;
@@ -48,13 +49,14 @@ export default function ReminderEditor({ todo }: Props) {
               className={`reminder${r.fired ? ' fired' : ''}`}
             >
               <span>
-                {formatRemindAt(r.remindAt)} {r.fired ? '· fired' : ''}
+                {formatRemindAt(r.remindAt)}{' '}
+                {r.fired ? `· ${t.reminderFiredLabel}` : ''}
               </span>
               <button
                 className="ghost"
                 type="button"
                 onClick={() => removeReminder(r.id)}
-                aria-label={`Remove reminder ${formatRemindAt(r.remindAt)}`}
+                aria-label={t.reminderRemove(formatRemindAt(r.remindAt))}
               >
                 ✕
               </button>
@@ -68,7 +70,7 @@ export default function ReminderEditor({ todo }: Props) {
           value={when}
           onChange={(e) => setWhen(e.target.value)}
         />
-        <button type="submit">Add reminder</button>
+        <button type="submit">{t.reminderAdd}</button>
       </form>
     </div>
   );
