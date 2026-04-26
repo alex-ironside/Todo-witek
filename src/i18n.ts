@@ -64,6 +64,12 @@ export const t = {
 
   // Install (PWA)
   installApp: 'Zainstaluj aplikację',
+  installIosTitle: 'Zainstaluj na iOS',
+  installIosStep1:
+    'Stuknij ikonę „Udostępnij" w pasku Safari (kwadrat ze strzałką w górę).',
+  installIosStep2: 'Wybierz „Dodaj do ekranu początkowego".',
+  installIosStep3: 'Stuknij „Dodaj" w prawym górnym rogu.',
+  installClose: 'Zamknij',
 };
 
 export type Strings = typeof t;

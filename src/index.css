@@ -130,6 +130,27 @@ input, select {
 .drag-handle:active { cursor: grabbing; background: var(--panel-2); }
 .drag-handle:focus-visible { outline: 2px solid var(--accent); }
 
+.ios-install-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+.ios-install-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+}
+.ios-install-card h2 { margin-top: 0; }
+.ios-install-card ol { padding-left: 20px; line-height: 1.5; }
+.ios-install-card button { width: 100%; margin-top: 8px; }
+
 .login {
   max-width: 360px;
   margin: 80px auto;

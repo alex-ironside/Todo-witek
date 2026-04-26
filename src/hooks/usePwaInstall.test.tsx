@@ -77,3 +77,44 @@ describe('usePwaInstall', () => {
     expect(result.current.canInstall).toBe(false);
   });
 });
+
+describe('usePwaInstall on iOS', () => {
+  const setUserAgent = (ua: string) => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: ua,
+      configurable: true,
+    });
+  };
+
+  const setStandalone = (value: boolean) => {
+    Object.defineProperty(navigator, 'standalone', {
+      value,
+      configurable: true,
+    });
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: value,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia;
+  };
+
+  beforeEach(() => {
+    setUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15'
+    );
+    setStandalone(false);
+  });
+
+  it('reports isIos=true and canInstall=true when on iOS Safari and not installed', () => {
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.isIos).toBe(true);
+    expect(result.current.canInstall).toBe(true);
+  });
+
+  it('reports canInstall=false when already installed (standalone)', () => {
+    setStandalone(true);
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.isIos).toBe(true);
+    expect(result.current.canInstall).toBe(false);
+  });
+});
