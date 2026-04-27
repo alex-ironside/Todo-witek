@@ -58,8 +58,8 @@ export default function TodoItem({ todo }: Props) {
 
   return (
     <div className={`todo${todo.done ? ' done' : ''}`}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <label className="row" style={{ flex: 1 }}>
+      <div className="row todo-main-row" style={{ justifyContent: 'space-between' }}>
+        <label className="row todo-label">
           <input
             type="checkbox"
             checked={!!todo.done}
@@ -83,7 +83,7 @@ export default function TodoItem({ todo }: Props) {
             </span>
           )}
         </label>
-        <div className="row">
+        <div className="row todo-actions">
           <button className="ghost" onClick={() => setOpen((o) => !o)}>
             {open ? t.hideReminders : t.showReminders}
           </button>
