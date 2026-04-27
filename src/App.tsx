@@ -4,10 +4,11 @@ import { useAuth } from './hooks/useAuth';
 import { useTodos } from './hooks/useTodos';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useStorageMode } from './hooks/useStorageMode';
+import { usePushNotifications } from './hooks/usePushNotifications';
 import { RepoProvider } from './hooks/RepoContext';
+import PushToggle from './components/PushToggle';
 import { logout } from './firebase/auth';
-import { isConfigured, vapidKey } from './firebase/config';
-import { registerCurrentDeviceForPush } from './firebase/pushTokens';
+import { isConfigured } from './firebase/config';
 import { createLocalTodoRepo } from './repos/localTodoRepo';
 import { createFirebaseTodoRepo } from './repos/firebaseTodoRepo';
 import {
@@ -92,10 +93,6 @@ function FirebaseApp({ mode, onModeChange }: ModeProps) {
   const { user, loading } = useAuth();
   const online = useOnlineStatus();
 
-  useEffect(() => {
-    if (user) requestNotificationPermission();
-  }, [user]);
-
   if (loading) {
     return <div className="app"><p className="muted">{t.loading}</p></div>;
   }
@@ -124,6 +121,7 @@ function FirebaseAuthenticated({
   onModeChange,
 }: FirebaseAuthenticatedProps) {
   const repo = useMemo(() => createFirebaseTodoRepo(user.uid), [user.uid]);
+  const push = usePushNotifications(user.uid);
 
   return (
     <RepoProvider repo={repo}>
@@ -134,22 +132,15 @@ function FirebaseAuthenticated({
         identity={user.email || t.loginTitle}
         signOut={() => logout()}
         repo={repo}
+        pushBanner={push.bannerMessage}
       >
-        {vapidKey && (
-          <div className="card">
-            <button
-              className="primary"
-              onClick={() =>
-                registerCurrentDeviceForPush(user.uid).catch((e: Error) =>
-                  alert(`${t.pushSetupFailed}: ${e.message}`)
-                )
-              }
-            >
-              {t.pushEnable}
-            </button>
-            <p className="muted">{t.pushHint}</p>
-          </div>
-        )}
+        <div className="card">
+          <PushToggle
+            status={push.status}
+            enable={push.enable}
+            disable={push.disable}
+          />
+        </div>
       </Shell>
     </RepoProvider>
   );
@@ -161,6 +152,7 @@ interface ShellProps extends ModeProps {
   signOut: (() => void) | null;
   repo: TodoRepository;
   children?: ReactNode;
+  pushBanner?: string | null;
 }
 
 function Shell({
@@ -171,6 +163,7 @@ function Shell({
   signOut,
   repo,
   children,
+  pushBanner,
 }: ShellProps) {
   const { todos, loading, error } = useTodos(repo);
   useReminderScheduler(todos, repo);
@@ -188,6 +181,7 @@ function Shell({
           )}
         </div>
       </div>
+      {pushBanner && <div className="banner warn">{pushBanner}</div>}
       {!online && mode === 'firebase' && (
         <div className="banner warn">{t.offlineBanner}</div>
       )}
