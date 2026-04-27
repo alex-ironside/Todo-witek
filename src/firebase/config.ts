@@ -7,13 +7,13 @@ import type { FirebaseOptions } from 'firebase/app';
 // You only need vapidKey if you want FCM push notifications.
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: 'AIzaSyAlUGu40gQ9vqe5CMxAvMEyZXdCJ-zgUn4',
-  authDomain: 'todo-witek.firebaseapp.com',
-  projectId: 'todo-witek',
-  storageBucket: 'todo-witek.firebasestorage.app',
-  messagingSenderId: '753171069994',
-  appId: '1:753171069994:web:15d897dc95a7bb1f11d753',
-  measurementId: 'G-QERCKMDPDH',
+  apiKey: "AIzaSyDwy45pYYRH26lGTasIKyJkVUx7YHTUb0Q",
+  authDomain: "todo-witek-6a21e.firebaseapp.com",
+  projectId: "todo-witek-6a21e",
+  storageBucket: "todo-witek-6a21e.firebasestorage.app",
+  messagingSenderId: "1076835553082",
+  appId: "1:1076835553082:web:d45fc915d2f55358bb4a03",
+  measurementId: "G-DZJ28NFYE9"
 };
 
 export const vapidKey = '';
