@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import {
   initializeFirestore,
   persistentLocalCache,
-  persistentMultipleTabManager,
+  persistentSingleTabManager,
   type Firestore,
 } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
@@ -31,11 +31,11 @@ export const getFirebaseApp = (): FirebaseApp => {
 
 export const getDb = (): Firestore => {
   if (!_db) {
-    // Offline-first: IndexedDB cache + multi-tab support.
-    // Writes made offline are queued and replayed on reconnect.
+    // Offline-first: IndexedDB cache. Single-tab manager avoids the
+    // cross-tab coordination that caused addDoc to hang indefinitely.
     _db = initializeFirestore(getFirebaseApp(), {
       localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
+        tabManager: persistentSingleTabManager({}),
       }),
     });
   }

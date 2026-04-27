@@ -80,6 +80,38 @@ describe('TodoForm — submit with mocked repo', () => {
     });
   });
 
+  it('renders the keep-input toggle above the text field', () => {
+    const repo = makeRepo();
+    renderForm(repo);
+    expect(screen.getByRole('checkbox', { name: t.keepInputToggle })).toBeInTheDocument();
+  });
+
+  it('clears the input by default (toggle off) after successful add', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    renderForm(repo);
+
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+    await user.type(input, 'My task');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    expect(input).toHaveValue('');
+  });
+
+  it('keeps the input value after successful add when toggle is on', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    renderForm(repo);
+
+    await user.click(screen.getByRole('checkbox', { name: t.keepInputToggle }));
+
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+    await user.type(input, 'My task');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    expect(input).toHaveValue('My task');
+  });
+
   it('does not call create when the input is empty', async () => {
     const user = userEvent.setup();
     const repo = makeRepo();
@@ -87,6 +119,31 @@ describe('TodoForm — submit with mocked repo', () => {
 
     await user.click(screen.getByRole('button', { name: t.todoAdd }));
     expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('can submit a second item via Enter while first cloud create is pending', async () => {
+    const user = userEvent.setup();
+    // First create hangs (simulates slow Firestore). Second resolves normally.
+    const repo = makeRepo({
+      create: vi.fn()
+        .mockReturnValueOnce(new Promise<string>(() => {}))
+        .mockResolvedValue('second-id'),
+    });
+    renderForm(repo);
+
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+
+    await user.type(input, 'First task');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    // First create is still pending — type a second item and submit via Enter
+    await user.type(input, 'Second task{Enter}');
+
+    expect(repo.create).toHaveBeenCalledTimes(2);
+    expect(repo.create).toHaveBeenNthCalledWith(2, {
+      title: 'Second task',
+      reminders: [],
+    });
   });
 });
 

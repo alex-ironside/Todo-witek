@@ -5,43 +5,49 @@ import { t } from '../i18n';
 export default function TodoForm() {
   const repo = useRepo();
   const [title, setTitle] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [keepInput, setKeepInput] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setBusy(true);
+    const saved = title.trim();
     setError('');
+    if (!keepInput) setTitle('');
+    inputRef.current?.focus();
     try {
-      await repo.create({ title: title.trim(), reminders: [] });
-      setTitle('');
-      // Restore focus so the user can type the next task without clicking.
-      // Clicking the submit button moves focus to the button; we reclaim it
-      // here while the input is still enabled (no disabled attribute used).
-      inputRef.current?.focus();
+      await repo.create({ title: saved, reminders: [] });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.todoSaveError);
-    } finally {
-      setBusy(false);
+      setTitle(saved);
     }
   };
 
   return (
-    <form className="card row" onSubmit={onSubmit}>
-      <input
-        ref={inputRef}
-        placeholder={t.todoPlaceholder}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        // Do not disable the input during submit — disabling blurs the element
-        // and focus is not automatically restored when re-enabled, leaving the
-        // user unable to type the next task without clicking the field again.
-      />
-      <button className="primary" type="submit" disabled={busy || !title.trim()}>
-        {t.todoAdd}
-      </button>
+    <form className="card col" onSubmit={onSubmit}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}>
+        <input
+          type="checkbox"
+          checked={keepInput}
+          onChange={(e) => setKeepInput(e.target.checked)}
+          style={{ width: 'auto', margin: 0 }}
+        />
+        {t.keepInputToggle}
+      </label>
+      <div className="row">
+        <input
+          ref={inputRef}
+          placeholder={t.todoPlaceholder}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          // Do not disable the input during submit — disabling blurs the element
+          // and focus is not automatically restored when re-enabled.
+        />
+        <button className="primary" type="submit" disabled={!title.trim()}>
+          {t.todoAdd}
+        </button>
+      </div>
       {error && <div className="error">{error}</div>}
     </form>
   );

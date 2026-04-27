@@ -37,6 +37,7 @@ export const t = {
   todoPlaceholder: 'Dodaj zadanie…',
   todoAdd: 'Dodaj',
   todoSaveError: 'Nie udało się zapisać',
+  keepInputToggle: 'Zachowaj tekst po dodaniu',
 
   // TodoList
   todosEmpty: 'Brak zadań. Dodaj jedno powyżej.',
