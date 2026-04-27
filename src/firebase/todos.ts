@@ -69,7 +69,8 @@ const sortByPosition = (todos: Todo[]): Todo[] =>
 
 export const observeUserTodos = (
   ownerId: string,
-  callback: (todos: Todo[]) => void
+  callback: (todos: Todo[]) => void,
+  onError?: (err: Error) => void
 ): Unsubscribe => {
   // Sort client-side by position so we don't need a composite Firestore
   // index. Fetch ordered by createdAt desc as a stable backbone for ties
@@ -79,11 +80,20 @@ export const observeUserTodos = (
     where('ownerId', '==', ownerId),
     orderBy('createdAt', 'desc')
   );
-  return onSnapshot(q, (snap: QuerySnapshot<DocumentData>) => {
-    const todos = snap.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<Todo, 'id'>),
-    }));
-    callback(sortByPosition(todos));
-  });
+  return onSnapshot(
+    q,
+    (snap: QuerySnapshot<DocumentData>) => {
+      const todos = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<Todo, 'id'>),
+      }));
+      callback(sortByPosition(todos));
+    },
+    (err) => {
+      // Propagate to caller so the UI can show an error instead of hanging.
+      // Common causes: missing composite index, database not provisioned, rules.
+      console.error('[todos] onSnapshot error:', err.code, err.message);
+      onError?.(err);
+    }
+  );
 };

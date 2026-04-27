@@ -17,5 +17,5 @@ export const createFirebaseTodoRepo = (ownerId: string): TodoRepository => ({
   toggleDone,
   delete: deleteTodo,
   reorder: reorderTodos,
-  observe: (callback) => observeUserTodos(ownerId, callback),
+  observe: (callback, onError) => observeUserTodos(ownerId, callback, onError),
 });

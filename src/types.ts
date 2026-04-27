@@ -39,5 +39,8 @@ export interface TodoRepository {
   toggleDone: (id: string, done: boolean) => Promise<void>;
   delete: (id: string) => Promise<void>;
   reorder: (orderedIds: string[]) => Promise<void>;
-  observe: (callback: (todos: Todo[]) => void) => Unsubscribe;
+  observe: (
+    callback: (todos: Todo[]) => void,
+    onError?: (err: Error) => void
+  ) => Unsubscribe;
 }

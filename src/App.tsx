@@ -172,7 +172,7 @@ function Shell({
   repo,
   children,
 }: ShellProps) {
-  const { todos, loading } = useTodos(repo);
+  const { todos, loading, error } = useTodos(repo);
   useReminderScheduler(todos, repo);
 
   return (
@@ -191,6 +191,7 @@ function Shell({
       {!online && mode === 'firebase' && (
         <div className="banner warn">{t.offlineBanner}</div>
       )}
+      {error && <div className="banner warn">{t.todosLoadError}</div>}
       <TodoForm />
       <TodoList todos={todos} loading={loading} />
       {children}

@@ -41,6 +41,7 @@ export const t = {
 
   // TodoList
   todosEmpty: 'Brak zadań. Dodaj jedno powyżej.',
+  todosLoadError: 'Nie udało się załadować zadań. Odśwież stronę lub spróbuj ponownie później.',
 
   // TodoItem
   dragHandle: 'Przeciągnij, aby zmienić kolejność',

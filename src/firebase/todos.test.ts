@@ -125,4 +125,27 @@ describe('todos repository', () => {
     expect(cb).toHaveBeenCalledWith([{ id: 't1', title: 'A' }]);
     expect(off).toBe(unsub);
   });
+
+  it('observeUserTodos calls onError when onSnapshot fires an error', async () => {
+    const unsub = vi.fn();
+    const firestoreError = Object.assign(new Error('Missing or insufficient permissions.'), {
+      code: 'permission-denied',
+    });
+    onSnapshot.mockImplementation(
+      (
+        _q: unknown,
+        _next: unknown,
+        error: (err: Error) => void
+      ) => {
+        error(firestoreError);
+        return unsub;
+      }
+    );
+    const cb = vi.fn();
+    const onError = vi.fn();
+    const { observeUserTodos } = await importTodos();
+    observeUserTodos('user-1', cb, onError);
+    expect(cb).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(firestoreError);
+  });
 });
