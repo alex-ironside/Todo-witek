@@ -4,12 +4,14 @@ const collection = vi.fn();
 const doc = vi.fn();
 const setDoc = vi.fn();
 const deleteDoc = vi.fn();
+const getDoc = vi.fn();
 
 vi.mock('firebase/firestore', () => ({
   collection: (...a: unknown[]) => collection(...a),
   doc: (...a: unknown[]) => doc(...a),
   setDoc: (...a: unknown[]) => setDoc(...a),
   deleteDoc: (...a: unknown[]) => deleteDoc(...a),
+  getDoc: (...a: unknown[]) => getDoc(...a),
 }));
 
 vi.mock('./app', () => ({
@@ -66,5 +68,23 @@ describe('pushTokens repository', () => {
     const { unregisterDeviceToken } = await importPushTokens();
     await unregisterDeviceToken('tok-abc');
     expect(deleteDoc).toHaveBeenCalledOnce();
+  });
+
+  it('getCurrentDeviceToken returns null when token is not in Firestore', async () => {
+    mockRegister.mockResolvedValue({ __reg: true });
+    getFcmToken.mockResolvedValue('tok-xyz');
+    getDoc.mockResolvedValue({ exists: () => false, data: () => undefined });
+    const { getCurrentDeviceToken } = await importPushTokens();
+    const result = await getCurrentDeviceToken('user-1');
+    expect(result).toBeNull();
+  });
+
+  it('getCurrentDeviceToken returns token when Firestore doc exists for this user', async () => {
+    mockRegister.mockResolvedValue({ __reg: true });
+    getFcmToken.mockResolvedValue('tok-xyz');
+    getDoc.mockResolvedValue({ exists: () => true, data: () => ({ userId: 'user-1', token: 'tok-xyz' }) });
+    const { getCurrentDeviceToken } = await importPushTokens();
+    const result = await getCurrentDeviceToken('user-1');
+    expect(result).toBe('tok-xyz');
   });
 });
