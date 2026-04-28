@@ -185,7 +185,11 @@ function Shell({
       {!online && mode === 'firebase' && (
         <div className="banner warn">{t.offlineBanner}</div>
       )}
-      {error && <div className="banner warn">{t.todosLoadError}</div>}
+      {error && (error as { code?: string }).code === 'permission-denied' ? (
+        <div className="banner warn">{t.firestoreNotEnabled}</div>
+      ) : error ? (
+        <div className="banner warn">{t.todosLoadError}</div>
+      ) : null}
       <TodoForm />
       <TodoList todos={todos} loading={loading} />
       {children}

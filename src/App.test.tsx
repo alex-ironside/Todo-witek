@@ -50,8 +50,13 @@ vi.mock('./hooks/useOnlineStatus', () => ({
   useOnlineStatus: () => true,
 }));
 
+let mockTodosState: { todos: never[]; loading: boolean; error: Error | null } = {
+  todos: [],
+  loading: false,
+  error: null,
+};
 vi.mock('./hooks/useTodos', () => ({
-  useTodos: () => ({ todos: [], loading: false, error: null }),
+  useTodos: () => mockTodosState,
 }));
 
 vi.mock('./repos/firebaseTodoRepo', () => ({
@@ -85,6 +90,7 @@ describe('App regression tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
+    mockTodosState = { todos: [], loading: false, error: null };
     // Default: observeAuth calls back with a logged-in user immediately
     mockObserveAuth.mockImplementation((cb: (user: unknown) => void) => {
       cb({ uid: 'user-1', email: 'test@test.com' });
@@ -96,5 +102,24 @@ describe('App regression tests', () => {
     const App = await importApp();
     render(<App />);
     expect(mockRequestNotificationPermission).not.toHaveBeenCalled();
+  });
+
+  describe('Shell error banner', () => {
+    it('shows firestoreNotEnabled banner on permission-denied error', async () => {
+      const permErr = Object.assign(new Error('perm'), { code: 'permission-denied' });
+      mockTodosState = { todos: [], loading: false, error: permErr };
+      const App = await importApp();
+      const { getByText, queryByText } = render(<App />);
+      expect(getByText(/console\.firebase\.google\.com/)).toBeInTheDocument();
+      expect(queryByText(/Nie udało się załadować zadań/)).toBeNull();
+    });
+
+    it('shows todosLoadError banner for generic errors', async () => {
+      mockTodosState = { todos: [], loading: false, error: new Error('generic') };
+      const App = await importApp();
+      const { getByText, queryByText } = render(<App />);
+      expect(getByText(/Nie udało się załadować zadań/)).toBeInTheDocument();
+      expect(queryByText(/console\.firebase\.google\.com/)).toBeNull();
+    });
   });
 });

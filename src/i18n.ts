@@ -42,6 +42,8 @@ export const t = {
   // TodoList
   todosEmpty: 'Brak zadań. Dodaj jedno powyżej.',
   todosLoadError: 'Nie udało się załadować zadań. Odśwież stronę lub spróbuj ponownie później.',
+  firestoreNotEnabled:
+    'Firestore nie jest włączony — włącz go na console.firebase.google.com',
 
   // TodoItem
   dragHandle: 'Przeciągnij, aby zmienić kolejność',
