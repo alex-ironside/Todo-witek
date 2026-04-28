@@ -27,5 +27,5 @@ Plans:
 **Plans:** 2 plans in 1 wave (parallel)
 
 Plans:
-- [ ] 02-PLAN-01.md — Firestore PERMISSION_DENIED error surface: distinct actionable banner in app when API not enabled
-- [ ] 02-PLAN-02.md — GitHub Actions cron workflow: Node script queries Firestore for due reminders, sends FCM via Admin SDK, marks fired; service account key stored as repo secret
+- [x] 02-PLAN-01.md — Firestore PERMISSION_DENIED error surface: distinct actionable banner in app when API not enabled
+- [x] 02-PLAN-02.md — GitHub Actions cron workflow: Node script queries Firestore for due reminders, sends FCM via Admin SDK, marks fired; service account key stored as repo secret

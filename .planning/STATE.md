@@ -2,26 +2,26 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-last_updated: "2026-04-28T10:16:06.792Z"
+status: Complete
+last_updated: "2026-04-28T12:28:00.000Z"
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 6
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State — Todo Witek
 
 ## Current Phase
 
-Phase 1: Push Notifications Setup — COMPLETE (all 6 plans done)
+Phase 2: Firestore API + GitHub Actions Reminder Cron — COMPLETE (all 2 plans done)
 
 ## Position
 
 - Current plan: Complete
-- Last completed: 01-06 (Wire PushToggle into App.tsx, remove auto-permission, add foreground banner, regression test)
-- Stopped at: None — phase complete
+- Last completed: 02-02 (GitHub Actions cron workflow)
+- Stopped at: None — milestone complete
 
 ## Accumulated Context
 
@@ -50,8 +50,13 @@ Phase 1: Push Notifications Setup — COMPLETE (all 6 plans done)
 | 01    | 03   | 8min     | 1     | 1     |
 | 01    | 06   | ~2min    | 2     | 2     |
 
+- Cast `error as { code?: string }` in App.tsx for FirebaseError.code — minimal safe cast, avoids `any`
+- vi.mock() unusable in .cjs Vitest test files (ESM-only module; hoisting runs before globals init) → dependency injection: sendDueReminders(messagingOverride) instead
+- Firestore Admin SDK query returns tokens alphabetically in emulator — Test D mock responses ordered to match actual index positions
+- scripts/ excluded from root vite.config.ts test config (emulator-dependent tests must not run in main React suite)
+
 ## Last Session
 
-- Timestamp: 2026-04-27T20:58:00Z
-- Stopped at: Completed 01-PLAN-06.md (phase complete)
+- Timestamp: 2026-04-28T12:28:00Z
+- Stopped at: Completed 02-PLAN-02.md (milestone complete)
 - Resume file: None
