@@ -33,6 +33,7 @@ async function sendDueReminders(messagingOverride) {
   const windowStart = now - WINDOW_MS;
 
   const snap = await db.collection('todos').where('done', '==', false).get();
+  console.log(`[reminders] found ${snap.docs.length} undone todo(s)`);
 
   for (const doc of snap.docs) {
     const todo = doc.data();
@@ -42,13 +43,21 @@ async function sendDueReminders(messagingOverride) {
     const due = reminders.filter(
       (r) => !r.fired && r.remindAt <= now && r.remindAt >= windowStart
     );
+
+    const skipped = reminders.filter((r) => !r.fired && r.remindAt < windowStart);
+    if (skipped.length > 0) {
+      console.log(`[reminders] todo ${doc.id}: ${skipped.length} reminder(s) skipped (outside 30-min window)`);
+    }
+
     if (due.length === 0) continue;
+    console.log(`[reminders] todo ${doc.id}: ${due.length} due reminder(s), owner=${todo.ownerId}`);
 
     const tokensSnap = await db
       .collection('fcmTokens')
       .where('userId', '==', todo.ownerId)
       .get();
     const tokenList = tokensSnap.docs.map((d) => d.data().token);
+    console.log(`[reminders] found ${tokenList.length} FCM token(s) for owner=${todo.ownerId}`);
 
     if (tokenList.length > 0) {
       const response = await msg.sendEachForMulticast({
