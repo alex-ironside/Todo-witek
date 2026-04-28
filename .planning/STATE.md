@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: Ready to execute
+last_updated: "2026-04-28T10:16:06.792Z"
+progress:
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 6
+---
+
 # Project State — Todo Witek
 
 ## Current Phase
@@ -15,6 +28,7 @@ Phase 1: Push Notifications Setup — COMPLETE (all 6 plans done)
 ### Roadmap Evolution
 
 - Phase 1 added: add full push notifications setup
+- Phase 2 added: Firestore API enablement + GitHub Actions reminder cron (every 15 min)
 
 ### Decisions
 
