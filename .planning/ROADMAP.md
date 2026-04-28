@@ -1,31 +1,24 @@
 # Roadmap — Todo Witek
 
-## Milestone 1: Core Feature Completion
+## Milestones
 
-### Phase 1: Push Notifications Setup
+- ✅ **v1.0 Core Feature Completion** — Phases 1-2 (shipped 2026-04-28)
 
-**Goal:** Full push notification support — FCM token registration, permission request UI, Firestore token storage, background/foreground message handling, and per-device opt-in/opt-out.
+## Phases
 
-**Depends on:** —
+<details>
+<summary>✅ v1.0 Core Feature Completion (Phases 1-2) — SHIPPED 2026-04-28</summary>
 
-**Plans:** 6 plans across 3 waves
+- [x] Phase 1: Push Notifications Setup (6/6 plans) — completed 2026-04-27
+- [x] Phase 2: Firestore API + GitHub Actions Reminder Cron (2/2 plans) — completed 2026-04-28
 
-Plans:
-- [x] 01-PLAN-01.md — Characterization tests for messaging.ts and pushTokens.ts
-- [x] 01-PLAN-02.md — Add getCurrentDeviceToken helper to pushTokens.ts (TDD)
-- [x] 01-PLAN-03.md — Vite writeBundle plugin to stamp firebase-messaging-sw.js with config
-- [x] 01-PLAN-04.md — usePushNotifications hook (TDD)
-- [x] 01-PLAN-05.md — PushToggle component (TDD)
-- [x] 01-PLAN-06.md — Wire PushToggle into App.tsx, remove auto-permission, add foreground banner, regression test
+See [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full phase details.
 
-### Phase 2: Firestore API + GitHub Actions Reminder Cron
+</details>
 
-**Goal:** Make the app fully live — enable Firestore API at GCP level so data syncs, and wire up a GitHub Actions workflow (runs every 15 min) that queries Firestore for due reminders and sends FCM pushes via a Firebase service account.
+## Progress
 
-**Depends on:** Phase 1
-
-**Plans:** 2 plans in 1 wave (parallel)
-
-Plans:
-- [x] 02-PLAN-01.md — Firestore PERMISSION_DENIED error surface: distinct actionable banner in app when API not enabled
-- [x] 02-PLAN-02.md — GitHub Actions cron workflow: Node script queries Firestore for due reminders, sends FCM via Admin SDK, marks fired; service account key stored as repo secret
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|---------------|--------|-----------|
+| 1. Push Notifications Setup | v1.0 | 6/6 | Complete | 2026-04-27 |
+| 2. Firestore API + GitHub Actions Cron | v1.0 | 2/2 | Complete | 2026-04-28 |

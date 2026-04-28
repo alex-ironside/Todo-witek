@@ -55,6 +55,16 @@ Phase 2: Firestore API + GitHub Actions Reminder Cron — COMPLETE (all 2 plans 
 - Firestore Admin SDK query returns tokens alphabetically in emulator — Test D mock responses ordered to match actual index positions
 - scripts/ excluded from root vite.config.ts test config (emulator-dependent tests must not run in main React suite)
 
+## Deferred Items
+
+Items acknowledged and deferred at milestone close on 2026-04-28:
+
+| Category | Item | Status |
+|----------|------|--------|
+| debug | data-is-not-synched | root_cause_found — Firestore API now enabled (permission-denied → security rules, not API disabled). Debug session resolved. |
+| verification | Phase 01 human_needed | Live FCM opt-in/out/banner tests require real browser + VAPID key |
+| setup | FIREBASE_SERVICE_ACCOUNT_KEY | GitHub secret not yet set — user must configure before cron fires |
+
 ## Last Session
 
 - Timestamp: 2026-04-28T12:28:00Z
