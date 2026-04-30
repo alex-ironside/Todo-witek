@@ -7,13 +7,15 @@
 importScripts('https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js');
 
+// Keep these in sync with src/firebase/config.ts — the SW runs in a separate
+// context and cannot import the TS module. config.test.ts asserts they match.
 firebase.initializeApp({
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyDwy45pYYRH26lGTasIKyJkVUx7YHTUb0Q',
+  authDomain: 'todo-witek-6a21e.firebaseapp.com',
+  projectId: 'todo-witek-6a21e',
+  storageBucket: 'todo-witek-6a21e.firebasestorage.app',
+  messagingSenderId: '1076835553082',
+  appId: '1:1076835553082:web:d45fc915d2f55358bb4a03',
 });
 
 const messaging = firebase.messaging();

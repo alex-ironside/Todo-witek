@@ -16,7 +16,7 @@ export const firebaseConfig: FirebaseOptions = {
   measurementId: "G-DZJ28NFYE9"
 };
 
-export const vapidKey = '';
+export const vapidKey = 'BKTkdV9M8R0XyOT3jkI9G9_HKxhz-g4gNEyNCJt_BmTdT0EmhIOozkhh1CvWVo4F3Z_6YXmPQDsA-R7w5qdT5jU';
 
 export const isConfigured = (): boolean =>
   Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
