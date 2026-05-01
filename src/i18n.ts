@@ -26,6 +26,19 @@ export const t = {
   loginSubmitBusy: 'Logowanie…',
   loginFailed: 'Logowanie nie powiodło się',
 
+  // Reset password
+  resetPasswordTitle: 'Resetuj hasło',
+  resetPasswordHint:
+    'Podaj adres e-mail powiązany z kontem. Wyślemy link do zresetowania hasła.',
+  resetPasswordSubmit: 'Wyślij link resetujący',
+  resetPasswordSubmitBusy: 'Wysyłanie…',
+  resetPasswordSuccess:
+    'Wysłaliśmy link do zresetowania hasła. Sprawdź skrzynkę odbiorczą.',
+  resetPasswordFailed: 'Nie udało się wysłać linku resetującego',
+  resetPasswordEmailRequired: 'Podaj adres e-mail',
+  resetPasswordOpen: 'Nie pamiętasz hasła?',
+  resetPasswordBackToLogin: 'Wróć do logowania',
+
   // Firebase not configured
   notConfigured:
     'Firebase nie jest jeszcze skonfigurowany. Wpisz swoją konfigurację SDK Web w pliku',

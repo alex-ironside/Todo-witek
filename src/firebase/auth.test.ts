@@ -3,12 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const signInWithEmailAndPassword = vi.fn();
 const signOut = vi.fn();
 const onAuthStateChanged = vi.fn();
+const sendPasswordResetEmail = vi.fn();
 
 vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: (...args: unknown[]) =>
     signInWithEmailAndPassword(...args),
   signOut: (...args: unknown[]) => signOut(...args),
   onAuthStateChanged: (...args: unknown[]) => onAuthStateChanged(...args),
+  sendPasswordResetEmail: (...args: unknown[]) =>
+    sendPasswordResetEmail(...args),
 }));
 
 vi.mock('./app', () => ({
@@ -49,5 +52,23 @@ describe('auth wrapper', () => {
     const off = observeAuth(cb);
     expect(onAuthStateChanged).toHaveBeenCalledWith({ __auth: true }, cb);
     expect(off).toBe(unsub);
+  });
+
+  it('resetPassword delegates to sendPasswordResetEmail with auth instance', async () => {
+    sendPasswordResetEmail.mockResolvedValue(undefined);
+    const { resetPassword } = await importAuth();
+    await resetPassword('a@b.com');
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+      { __auth: true },
+      'a@b.com'
+    );
+  });
+
+  it('resetPassword propagates errors from the SDK', async () => {
+    sendPasswordResetEmail.mockRejectedValue(new Error('user-not-found'));
+    const { resetPassword } = await importAuth();
+    await expect(resetPassword('missing@b.com')).rejects.toThrow(
+      'user-not-found'
+    );
   });
 });
