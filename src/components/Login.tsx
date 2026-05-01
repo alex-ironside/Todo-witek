@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { login } from '../firebase/auth';
+import { login, resetPassword } from '../firebase/auth';
 import StorageModeToggle from './StorageModeToggle';
 import InstallButton from './InstallButton';
 import type { StorageMode } from '../services/storageMode';
@@ -15,6 +15,7 @@ export default function Login({ mode, onModeChange }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showReset, setShowReset] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -61,6 +62,72 @@ export default function Login({ mode, onModeChange }: Props) {
           {busy ? t.loginSubmitBusy : t.loginSubmit}
         </button>
       </form>
+      {showReset ? (
+        <ResetPasswordSection onClose={() => setShowReset(false)} />
+      ) : (
+        <button
+          className="ghost"
+          type="button"
+          onClick={() => setShowReset(true)}
+        >
+          {t.resetPasswordOpen}
+        </button>
+      )}
     </div>
+  );
+}
+
+interface ResetPasswordSectionProps {
+  onClose: () => void;
+}
+
+function ResetPasswordSection({ onClose }: ResetPasswordSectionProps) {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess(false);
+    if (!email) {
+      setError(t.resetPasswordEmailRequired);
+      return;
+    }
+    setBusy(true);
+    try {
+      await resetPassword(email);
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.resetPasswordFailed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="col reset-password">
+      <h2 id="reset-password-title">{t.resetPasswordTitle}</h2>
+      <p className="muted">{t.resetPasswordHint}</p>
+      <form className="col" onSubmit={onSubmit}>
+        <input
+          type="email"
+          autoComplete="email"
+          aria-labelledby="reset-password-title"
+          placeholder={t.emailPlaceholder}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {error && <div className="error">{error}</div>}
+        {success && <div className="success">{t.resetPasswordSuccess}</div>}
+        <button className="primary" type="submit" disabled={busy}>
+          {busy ? t.resetPasswordSubmitBusy : t.resetPasswordSubmit}
+        </button>
+        <button className="ghost" type="button" onClick={onClose}>
+          {t.resetPasswordBackToLogin}
+        </button>
+      </form>
+    </section>
   );
 }

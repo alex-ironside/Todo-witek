@@ -2,6 +2,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   type User,
   type UserCredential,
 } from 'firebase/auth';
@@ -19,3 +20,6 @@ export const logout = (): Promise<void> => signOut(getFirebaseAuth());
 export const observeAuth = (
   callback: (user: User | null) => void
 ): Unsubscribe => onAuthStateChanged(getFirebaseAuth(), callback);
+
+export const resetPassword = (email: string): Promise<void> =>
+  sendPasswordResetEmail(getFirebaseAuth(), email);
