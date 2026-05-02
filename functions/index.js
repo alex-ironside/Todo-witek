@@ -34,10 +34,16 @@ exports.sendDueReminders = functions.pubsub
       const tokenList = tokens.docs.map((d) => d.data().token);
 
       if (tokenList.length > 0) {
+        // Data-only payload: the SW renders the notification. A `notification`
+        // field would make the browser auto-display alongside the SW handler,
+        // duplicating the toast.
         await messaging.sendEachForMulticast({
           tokens: tokenList,
-          notification: { title: todo.title, body: 'Reminder' },
-          data: { todoId: doc.id },
+          data: {
+            todoId: doc.id,
+            title: todo.title,
+            body: 'Reminder',
+          },
         });
       }
 
