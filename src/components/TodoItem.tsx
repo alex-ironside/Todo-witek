@@ -87,12 +87,20 @@ export default function TodoItem({ todo }: Props) {
           <button className="ghost" onClick={() => setOpen((o) => !o)}>
             {open ? t.hideReminders : t.showReminders}
           </button>
-          <button
-            className="ghost"
-            onClick={editing ? cancelEdit : startEdit}
-          >
-            {editing ? t.cancel : t.edit}
-          </button>
+          {editing ? (
+            <>
+              <button className="primary" onClick={save}>
+                {t.save}
+              </button>
+              <button className="ghost" onClick={cancelEdit}>
+                {t.cancel}
+              </button>
+            </>
+          ) : (
+            <button className="ghost" onClick={startEdit}>
+              {t.edit}
+            </button>
+          )}
           <button className="danger" onClick={onDeleteClick}>
             {confirming ? t.deleteConfirm : t.delete}
           </button>

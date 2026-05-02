@@ -64,6 +64,7 @@ export const t = {
   showReminders: 'Przypomnienia',
   hideReminders: 'Ukryj',
   edit: 'Edytuj',
+  save: 'Zapisz',
   cancel: 'Anuluj',
   delete: 'Usuń',
   deleteConfirm: 'Potwierdź usunięcie',
