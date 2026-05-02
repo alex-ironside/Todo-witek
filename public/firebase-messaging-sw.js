@@ -20,11 +20,14 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Data-only messages: the Cloud Function omits the `notification` field so the
+// browser doesn't auto-display alongside this handler (which would duplicate).
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || 'Reminder';
+  const data = payload.data || {};
+  const title = data.title || 'Reminder';
   const options = {
-    body: payload.notification?.body || '',
-    data: payload.data || {},
+    body: data.body || '',
+    data,
     icon: '/icon-192.png',
   };
   self.registration.showNotification(title, options);
