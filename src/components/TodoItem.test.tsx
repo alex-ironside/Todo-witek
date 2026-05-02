@@ -57,6 +57,23 @@ describe('TodoItem edit/cancel', () => {
     await user.type(input, '  New title  {Enter}');
     expect(repo.update).toHaveBeenCalledWith('t1', { title: 'New title' });
   });
+
+  it('Save button writes the trimmed draft and exits edit mode', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    render(
+      <RepoProvider repo={repo}>
+        <TodoItem todo={makeTodo({ title: 'Original' })} />
+      </RepoProvider>
+    );
+    await user.click(screen.getByRole('button', { name: t.edit }));
+    const input = screen.getByDisplayValue('Original');
+    await user.clear(input);
+    await user.type(input, '  New title  ');
+    await user.click(screen.getByRole('button', { name: t.save }));
+    expect(repo.update).toHaveBeenCalledWith('t1', { title: 'New title' });
+    expect(screen.queryByDisplayValue('  New title  ')).not.toBeInTheDocument();
+  });
 });
 
 describe('TodoItem delete confirmation', () => {
