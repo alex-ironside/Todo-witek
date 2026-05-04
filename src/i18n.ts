@@ -70,9 +70,10 @@ export const t = {
   firestoreNotEnabled:
     'Firestore nie jest włączony — włącz go na console.firebase.google.com',
 
-  // TodoItem
+  // TodoItem / TodoRow
   dragHandle: 'Przeciągnij, aby zmienić kolejność',
   markDone: (title: string) => `Oznacz „${title}" jako wykonane`,
+  moreActions: 'Więcej akcji',
   showReminders: 'Przypomnienia',
   hideReminders: 'Ukryj',
   edit: 'Edytuj',
