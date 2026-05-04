@@ -12,11 +12,11 @@ import DoneSection from './DoneSection';
 import EmptyState from './EmptyState';
 import Drawer from './Drawer';
 import PopoverMenu, { type PopoverMenuItem } from './PopoverMenu';
+import RemindersSheet from './RemindersSheet';
 
 interface MainListProps {
   identity?: string;
   onOpenSettings?: () => void;
-  onOpenReminders?: (todoId: string) => void;
 }
 
 const noop = (): void => {};
@@ -30,7 +30,6 @@ const noop = (): void => {};
 export default function MainList({
   identity = '',
   onOpenSettings = noop,
-  onOpenReminders = noop,
 }: MainListProps) {
   const repo = useRepo();
   const { todos } = useTodos(repo);
@@ -42,6 +41,7 @@ export default function MainList({
   const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [remindersForId, setRemindersForId] = useState<string | null>(null);
   const confirmTimerRef = useRef<number | null>(null);
 
   useEffect(
@@ -92,9 +92,14 @@ export default function MainList({
   };
 
   const handleReminders = () => {
-    if (menuForId) onOpenReminders(menuForId);
+    if (menuForId) setRemindersForId(menuForId);
     closeMenu();
   };
+
+  const remindersForTodo =
+    remindersForId !== null
+      ? todos.find((td) => td.id === remindersForId) ?? null
+      : null;
 
   const handleDelete = () => {
     if (!menuForId) return;
@@ -175,6 +180,10 @@ export default function MainList({
         anchorRect={menuAnchorRect}
         items={items}
         onClose={closeMenu}
+      />
+      <RemindersSheet
+        todo={remindersForTodo}
+        onClose={() => setRemindersForId(null)}
       />
     </div>
   );

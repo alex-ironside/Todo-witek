@@ -236,14 +236,34 @@ describe('MainList', () => {
       }
     });
 
-    it('clicking Przypomnij calls onOpenReminders with the todo id', () => {
-      const onOpenReminders = vi.fn();
-      const { getByLabelText, getByText } = render(
-        wrap(<MainList onOpenReminders={onOpenReminders} />)
+    it('clicking Przypomnij opens the RemindersSheet for that todo', () => {
+      const { getByLabelText, getByText, getAllByRole } = render(
+        wrap(<MainList />)
+      );
+      // Before opening, the sheet exists but is closed (translate-y-full).
+      const dialogBefore = getAllByRole('dialog')[0];
+      expect(dialogBefore.className).toContain('translate-y-full');
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Przypomnij'));
+      // Sheet now open: dialog uses translate-y-0; subtitle references the todo title.
+      const dialog = getAllByRole('dialog')[0];
+      expect(dialog.className).toContain('translate-y-0');
+      // Subtitle inside the sheet references the todo title.
+      expect(dialog.textContent).toContain('open me');
+    });
+
+    it('Anuluj inside the RemindersSheet closes it', () => {
+      const { getByLabelText, getByText, getAllByRole } = render(
+        wrap(<MainList />)
       );
       fireEvent.click(getByLabelText('Więcej akcji'));
       fireEvent.click(getByText('Przypomnij'));
-      expect(onOpenReminders).toHaveBeenCalledWith('tx');
+      const cancelBtns = getAllByRole('button').filter(
+        (b) => b.textContent === 'Anuluj'
+      );
+      fireEvent.click(cancelBtns[0]);
+      const dialog = getAllByRole('dialog')[0];
+      expect(dialog.className).toContain('translate-y-full');
     });
 
     it('Esc with menu open closes the menu (no edit mode)', () => {
