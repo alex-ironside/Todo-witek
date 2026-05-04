@@ -132,7 +132,7 @@ function FirebaseAuthenticated({
         onModeChange={onModeChange}
         online={online}
         identity={user.email || t.loginTitle}
-        signOut={() => logout()}
+        signOut={async () => { await push.disable(); await logout(); }}
         repo={repo}
         pushBanner={push.bannerMessage}
       >

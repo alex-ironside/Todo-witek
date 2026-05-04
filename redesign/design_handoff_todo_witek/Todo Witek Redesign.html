@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"/>
+<title>Todo Witek — Redesign</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: oklch(0.14 0.006 60); font-family: Inter, -apple-system, system-ui, sans-serif; color: oklch(0.96 0.005 80); }
+  * { box-sizing: border-box; }
+  input::placeholder { color: oklch(0.55 0.010 70); }
+  /* Hide scrollbars inside phone screens */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "amber",
+  "density": "balanced",
+  "showLogin": true,
+  "showReset": true,
+  "showDrawer": true,
+  "showReminder": true,
+  "showSettings": true
+}/*EDITMODE-END*/;
+
+const ACCENTS = {
+  amber:  'oklch(0.78 0.13 70)',
+  rose:   'oklch(0.74 0.13 18)',
+  mint:   'oklch(0.78 0.11 165)',
+  violet: 'oklch(0.72 0.13 290)',
+  sky:    'oklch(0.78 0.10 235)',
+};
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const T = tokens(ACCENTS[tweaks.accent] || ACCENTS.amber);
+
+  return (
+    <>
+      <DesignCanvas
+        title="Todo Witek — clarity-first redesign"
+        subtitle="Polski. Modern dark, single warm accent. Sidebar dla kategorii. Wszystkie akcje pod • • •. Wykonane auto-zwijane."
+      >
+        <DCSection id="ios" title="iOS">
+          <DCArtboard id="ios-main" label="Lista — domyślna" width={420} height={820}>
+            <Frame kind="ios" T={T} density={tweaks.density} screen="main" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+          </DCArtboard>
+          {tweaks.showDrawer && (
+            <DCArtboard id="ios-drawer" label="Kategorie (drawer)" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="drawer" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReminder && (
+            <DCArtboard id="ios-reminder" label="Przypomnienia" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="reminder" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showSettings && (
+            <DCArtboard id="ios-settings" label="Ustawienia" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="settings" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showLogin && (
+            <DCArtboard id="ios-login" label="Logowanie" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="login" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReset && (
+            <DCArtboard id="ios-reset" label="Resetuj hasło" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="reset" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReset && (
+            <DCArtboard id="ios-reset-sent" label="Reset — wysłano" width={420} height={820}>
+              <Frame kind="ios" T={T} density={tweaks.density} screen="reset-sent" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+        </DCSection>
+
+        <DCSection id="android" title="Android">
+          <DCArtboard id="and-main" label="Lista — domyślna" width={420} height={820}>
+            <Frame kind="android" T={T} density={tweaks.density} screen="main" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+          </DCArtboard>
+          {tweaks.showDrawer && (
+            <DCArtboard id="and-drawer" label="Kategorie (drawer)" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="drawer" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReminder && (
+            <DCArtboard id="and-reminder" label="Przypomnienia" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="reminder" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showSettings && (
+            <DCArtboard id="and-settings" label="Ustawienia" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="settings" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showLogin && (
+            <DCArtboard id="and-login" label="Logowanie" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="login" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReset && (
+            <DCArtboard id="and-reset" label="Resetuj hasło" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="reset" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+          {tweaks.showReset && (
+            <DCArtboard id="and-reset-sent" label="Reset — wysłano" width={420} height={820}>
+              <Frame kind="android" T={T} density={tweaks.density} screen="reset-sent" accentName={tweaks.accent} onAccentChange={v => setTweak('accent', v)}/>
+            </DCArtboard>
+          )}
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Wygląd">
+          <TweakSelect label="Akcent" value={tweaks.accent} onChange={v => setTweak('accent', v)}
+            options={[
+              { value: 'amber', label: 'Bursztynowy' },
+              { value: 'rose', label: 'Różowy' },
+              { value: 'mint', label: 'Miętowy' },
+              { value: 'violet', label: 'Fioletowy' },
+              { value: 'sky', label: 'Błękitny' },
+            ]}/>
+          <TweakRadio label="Gęstość" value={tweaks.density} onChange={v => setTweak('density', v)}
+            options={[
+              { value: 'compact', label: 'Zwarta' },
+              { value: 'balanced', label: 'Zbalans.' },
+              { value: 'airy', label: 'Przestronna' },
+            ]}/>
+        </TweakSection>
+        <TweakSection title="Pokazane ekrany">
+          <TweakToggle label="Logowanie" value={tweaks.showLogin} onChange={v => setTweak('showLogin', v)}/>
+          <TweakToggle label="Resetuj hasło" value={tweaks.showReset} onChange={v => setTweak('showReset', v)}/>
+          <TweakToggle label="Kategorie (drawer)" value={tweaks.showDrawer} onChange={v => setTweak('showDrawer', v)}/>
+          <TweakToggle label="Przypomnienia" value={tweaks.showReminder} onChange={v => setTweak('showReminder', v)}/>
+          <TweakToggle label="Ustawienia" value={tweaks.showSettings} onChange={v => setTweak('showSettings', v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+function Frame({ kind, T, density, screen, accentName, onAccentChange }) {
+  if (kind === 'ios') {
+    return <IOSPhone T={T} density={density} screen={screen}
+             accentName={accentName} onAccentChange={onAccentChange}/>;
+  }
+  return <AndroidPhone T={T} density={density} screen={screen}
+           accentName={accentName} onAccentChange={onAccentChange}/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

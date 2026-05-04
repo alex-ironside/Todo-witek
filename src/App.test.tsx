@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 
 // ── Mocks (all at top level, before any imports of the module under test) ──
 
@@ -9,9 +9,10 @@ vi.mock('./services/notificationService', () => ({
   showLocalNotification: vi.fn(),
 }));
 
+const mockLogout = vi.fn();
 const mockObserveAuth = vi.fn();
 vi.mock('./firebase/auth', () => ({
-  logout: vi.fn(),
+  logout: (...a: unknown[]) => mockLogout(...a),
   observeAuth: (...a: unknown[]) => mockObserveAuth(...a),
 }));
 
@@ -27,15 +28,21 @@ vi.mock('./firebase/pushTokens', () => ({
   getCurrentDeviceToken: vi.fn(),
 }));
 
+const mockPushDisable = vi.fn();
+const mockPushEnable = vi.fn();
+let mockPushState: {
+  status: 'unconfigured' | 'enabled' | 'idle';
+  token: string | null;
+} = { status: 'unconfigured', token: null };
 vi.mock('./hooks/usePushNotifications', () => ({
   usePushNotifications: () => ({
-    status: 'unconfigured' as const,
-    token: null,
+    status: mockPushState.status,
+    token: mockPushState.token,
     errorMessage: null,
     bannerMessage: null,
     dismissBanner: vi.fn(),
-    enable: vi.fn(),
-    disable: vi.fn(),
+    enable: mockPushEnable,
+    disable: mockPushDisable,
   }),
 }));
 
@@ -91,6 +98,10 @@ describe('App regression tests', () => {
     vi.clearAllMocks();
     vi.resetModules();
     mockTodosState = { todos: [], loading: false, error: null };
+    mockPushState = { status: 'unconfigured', token: null };
+    mockPushDisable.mockResolvedValue(undefined);
+    mockPushEnable.mockResolvedValue(undefined);
+    mockLogout.mockResolvedValue(undefined);
     // Default: observeAuth calls back with a logged-in user immediately
     mockObserveAuth.mockImplementation((cb: (user: unknown) => void) => {
       cb({ uid: 'user-1', email: 'test@test.com' });
@@ -120,6 +131,40 @@ describe('App regression tests', () => {
       const { getByText, queryByText } = render(<App />);
       expect(getByText(/Nie udało się załadować zadań/)).toBeInTheDocument();
       expect(queryByText(/console\.firebase\.google\.com/)).toBeNull();
+    });
+  });
+
+  describe('signOut cleans up push registration', () => {
+    // Regression: account A's FCM token doc is owned by A in Firestore. After
+    // logout, when account B logs in on the same device, FCM returns the same
+    // device token; setDoc on that token attempts to update an A-owned doc and
+    // is blocked by `match /fcmTokens/{id}` rule `allow update: if false`.
+    // The fix is to delete the device's token doc while still authenticated as
+    // A so a fresh `create` succeeds for B.
+    it('calls push.disable() before logout() so the FCM token doc is removed while still authenticated', async () => {
+      mockPushState = { status: 'enabled', token: 'tok-A' };
+      const App = await importApp();
+      const { getByText } = render(<App />);
+      const signOutBtn = getByText('Wyloguj');
+      await act(async () => {
+        fireEvent.click(signOutBtn);
+      });
+      expect(mockPushDisable).toHaveBeenCalledTimes(1);
+      expect(mockLogout).toHaveBeenCalledTimes(1);
+      const disableOrder = mockPushDisable.mock.invocationCallOrder[0];
+      const logoutOrder = mockLogout.mock.invocationCallOrder[0];
+      expect(disableOrder).toBeLessThan(logoutOrder);
+    });
+
+    it('still logs out when push is unconfigured (disable is a no-op)', async () => {
+      mockPushState = { status: 'unconfigured', token: null };
+      const App = await importApp();
+      const { getByText } = render(<App />);
+      const signOutBtn = getByText('Wyloguj');
+      await act(async () => {
+        fireEvent.click(signOutBtn);
+      });
+      expect(mockLogout).toHaveBeenCalledTimes(1);
     });
   });
 });
