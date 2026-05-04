@@ -25,9 +25,11 @@ export default function ReminderEditor({ todo }: Props) {
     if (!when) return;
     const ts = new Date(when).getTime();
     if (Number.isNaN(ts)) return;
+    const fifteenMin = 15 * 60 * 1000;
+    const snapped = Math.round(ts / fifteenMin) * fifteenMin;
     const next: Reminder[] = [
       ...reminders,
-      { id: newReminderId(), remindAt: ts, fired: false },
+      { id: newReminderId(), remindAt: snapped, fired: false },
     ];
     setWhen('');
     await repo.update(todo.id, { reminders: next });
@@ -67,6 +69,7 @@ export default function ReminderEditor({ todo }: Props) {
       <form className="row" onSubmit={addReminder}>
         <input
           type="datetime-local"
+          step="900"
           value={when}
           onChange={(e) => setWhen(e.target.value)}
         />
