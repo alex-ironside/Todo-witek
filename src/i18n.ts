@@ -2,7 +2,11 @@
 // when a second locale is needed, swap this object for a map keyed by locale.
 
 export const t = {
-  brand: 'Todo Witek',
+  brand: 'Todo',
+
+  // App bar
+  menuOpen: 'Otwórz menu',
+  settingsOpen: 'Otwórz ustawienia',
 
   // Header / shell
   signOut: 'Wyloguj',
