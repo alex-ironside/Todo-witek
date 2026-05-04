@@ -25,6 +25,16 @@ export const t = {
   modeCloud: 'Chmura',
   modeGroupLabel: 'Tryb przechowywania',
 
+  // Transfer local → cloud
+  transferTitle: 'Przenieś z urządzenia',
+  transferHelper:
+    'Skopiuj zadania zapisane lokalnie do chmury i usuń je z tego urządzenia.',
+  transferAction: (count: number) => `Przenieś (${count})`,
+  transferBusy: 'Przenoszenie…',
+  transferDone: (count: number) =>
+    count === 1 ? 'Przeniesiono 1 zadanie.' : `Przeniesiono ${count} zadań.`,
+  transferFailed: 'Nie udało się przenieść zadań.',
+
   // Auth (Phase 9 redesign — auth flow)
   loginTitle: 'Zaloguj się',
   loginHint: 'Bez publicznej rejestracji.',
