@@ -25,17 +25,34 @@ export const t = {
   modeCloud: 'Chmura',
   modeGroupLabel: 'Tryb przechowywania',
 
-  // Login
+  // Login (legacy keys kept until Login.tsx is removed in Phase 9 PLAN-04)
   loginTitle: 'Zaloguj się',
-  loginHint:
-    'Tylko istniejące konta. Brak publicznej rejestracji. Przełącz na tryb Lokalny, aby używać aplikacji bez konta.',
+  loginHint: 'Bez publicznej rejestracji.',
   emailPlaceholder: 'E-mail',
   passwordPlaceholder: 'Hasło',
   loginSubmit: 'Zaloguj',
   loginSubmitBusy: 'Logowanie…',
   loginFailed: 'Logowanie nie powiodło się',
 
-  // Reset password
+  // Auth (Phase 9 redesign — auth flow)
+  loginEmail: 'E-mail',
+  loginPassword: 'Hasło',
+  loginForgot: 'Nie pamiętasz hasła?',
+  loginUseLocal: 'Użyj trybu lokalnego',
+  authEmptyEmail: 'Podaj adres e-mail',
+  authEmptyPassword: 'Podaj hasło',
+  resetTitle: 'Resetuj hasło',
+  resetHint:
+    'Podaj adres e-mail powiązany z kontem. Wyślemy link do zresetowania hasła.',
+  resetSubmit: 'Wyślij link resetujący',
+  resetSubmitBusy: 'Wysyłanie…',
+  resetEmptyError: 'Podaj adres e-mail',
+  resetSentTitle: 'Sprawdź skrzynkę',
+  resetSentBody:
+    'Wysłaliśmy link do zresetowania hasła na podany adres. Link wygasa po godzinie.',
+  resetBack: 'Wróć do logowania',
+
+  // Reset password (legacy keys — removed in Phase 9 PLAN-04)
   resetPasswordTitle: 'Resetuj hasło',
   resetPasswordHint:
     'Podaj adres e-mail powiązany z kontem. Wyślemy link do zresetowania hasła.',
@@ -86,10 +103,13 @@ export const t = {
   deleteConfirm: 'Na pewno?',
   remind: 'Przypomnij',
 
-  // ReminderEditor
+  // Reminders sheet
+  reminderSheetTitle: 'Przypomnienia',
+  reminderSheetSubtitle: (title: string) => `Dla zadania: „${title}"`,
+  reminderEmpty: 'Bez przypomnień.',
   reminderFiredLabel: 'wysłane',
   reminderRemove: (when: string) => `Usuń przypomnienie ${when}`,
-  reminderAdd: 'Dodaj przypomnienie',
+  reminderAdd: 'Dodaj termin',
 
   // Push
   pushEnable: 'Włącz powiadomienia push na wielu urządzeniach',
