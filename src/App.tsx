@@ -23,18 +23,24 @@ import type { StorageMode } from './services/storageMode';
 import type { Todo, TodoRepository } from './types';
 import AuthRouter from './components/auth/AuthRouter';
 import MainList from './components/main-list/MainList';
+import UpdatePrompt from './components/UpdatePrompt';
 import { t } from './i18n';
 
 export default function App() {
   const [mode, setMode] = useStorageMode();
 
-  if (mode === 'firebase' && !isConfigured()) {
-    return <FirebaseNotConfigured mode={mode} onModeChange={setMode} />;
-  }
-  if (mode === 'local') {
-    return <LocalApp mode={mode} onModeChange={setMode} />;
-  }
-  return <FirebaseApp mode={mode} onModeChange={setMode} />;
+  return (
+    <>
+      {mode === 'firebase' && !isConfigured() ? (
+        <FirebaseNotConfigured mode={mode} onModeChange={setMode} />
+      ) : mode === 'local' ? (
+        <LocalApp mode={mode} onModeChange={setMode} />
+      ) : (
+        <FirebaseApp mode={mode} onModeChange={setMode} />
+      )}
+      <UpdatePrompt />
+    </>
+  );
 }
 
 interface ModeProps {

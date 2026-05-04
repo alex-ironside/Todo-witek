@@ -112,6 +112,11 @@ export const t = {
   installTitle: 'Zainstaluj aplikację',
   installHelper: 'Dodaj do ekranu początkowego, aby otwierać szybciej.',
 
+  // Update available (PWA new SW waiting)
+  updateAvailable: 'Dostępna jest nowa wersja',
+  updateApply: 'Zaktualizuj',
+  updateDismiss: 'Później',
+
   // Install (PWA)
   installApp: 'Zainstaluj aplikację',
   installIosTitle: 'Zainstaluj na iOS',
