@@ -69,8 +69,12 @@ export const usePushNotifications = (userId: string): PushState => {
   }, [bannerMessage]);
 
   const enable = useCallback(async () => {
+    // iOS WebKit invalidates the user-gesture across React state batching.
+    // Invoke the permission call BEFORE setState so Notification.requestPermission()
+    // runs as the first JS in the click frame.
+    const permissionPromise = requestNotificationPermission();
     setStatus('requesting');
-    const permission = await requestNotificationPermission();
+    const permission = await permissionPromise;
     if (permission === 'denied') { setStatus('denied'); return; }
     // 'default' (iOS dismisses prompt or suppresses it when gesture is lost) and
     // 'unsupported' both resolve back to idle so the button re-enables.
