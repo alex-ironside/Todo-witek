@@ -63,11 +63,15 @@ describe('TodoRow', () => {
     expect(title.className).toMatch(/text-textDim/);
   });
 
-  it('overflow button calls onOpenOverflow with todo id', () => {
+  it('overflow button calls onOpenOverflow with todo id and a DOMRect', () => {
     const spy = vi.fn();
     const { getByLabelText } = render(wrap(repo, <TodoRow todo={todo()} onOpenOverflow={spy} />));
     fireEvent.click(getByLabelText('Więcej akcji'));
-    expect(spy).toHaveBeenCalledWith('t1');
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0][0]).toBe('t1');
+    const rect = spy.mock.calls[0][1] as DOMRect;
+    expect(typeof rect.bottom).toBe('number');
+    expect(typeof rect.right).toBe('number');
   });
 
   it('does not render reminder bell when there are no reminders', () => {
@@ -81,5 +85,80 @@ describe('TodoRow', () => {
     });
     const { getByTestId } = render(wrap(repo, <TodoRow todo={t} onOpenOverflow={() => {}} />));
     expect(getByTestId('reminder-bell')).toBeInTheDocument();
+  });
+
+  describe('edit mode', () => {
+    it('renders InlineEdit (textbox) instead of the title when isEditing', () => {
+      const { getByRole, queryByText } = render(
+        wrap(
+          repo,
+          <TodoRow
+            todo={todo()}
+            isEditing
+            onSaveEdit={() => {}}
+            onCancelEdit={() => {}}
+            onOpenOverflow={() => {}}
+          />
+        )
+      );
+      const input = getByRole('textbox') as HTMLInputElement;
+      expect(input.value).toBe('kup mleko');
+      // The title is no longer rendered as static text — it's only in the input value.
+      expect(queryByText('kup mleko')).toBeNull();
+    });
+
+    it('hides the overflow trigger when editing', () => {
+      const { queryByLabelText } = render(
+        wrap(
+          repo,
+          <TodoRow
+            todo={todo()}
+            isEditing
+            onSaveEdit={() => {}}
+            onCancelEdit={() => {}}
+            onOpenOverflow={() => {}}
+          />
+        )
+      );
+      expect(queryByLabelText('Więcej akcji')).toBeNull();
+    });
+
+    it('Enter in edit mode calls onSaveEdit with (id, newTitle)', () => {
+      const onSaveEdit = vi.fn();
+      const { getByRole } = render(
+        wrap(
+          repo,
+          <TodoRow
+            todo={todo()}
+            isEditing
+            onSaveEdit={onSaveEdit}
+            onCancelEdit={() => {}}
+            onOpenOverflow={() => {}}
+          />
+        )
+      );
+      const input = getByRole('textbox') as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'nowy' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(onSaveEdit).toHaveBeenCalledWith('t1', 'nowy');
+    });
+
+    it('Esc in edit mode calls onCancelEdit with the id', () => {
+      const onCancelEdit = vi.fn();
+      const { getByRole } = render(
+        wrap(
+          repo,
+          <TodoRow
+            todo={todo()}
+            isEditing
+            onSaveEdit={() => {}}
+            onCancelEdit={onCancelEdit}
+            onOpenOverflow={() => {}}
+          />
+        )
+      );
+      fireEvent.keyDown(getByRole('textbox'), { key: 'Escape' });
+      expect(onCancelEdit).toHaveBeenCalledWith('t1');
+    });
   });
 });
