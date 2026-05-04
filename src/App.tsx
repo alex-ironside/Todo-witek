@@ -21,7 +21,7 @@ import {
 } from './services/notificationService';
 import type { StorageMode } from './services/storageMode';
 import type { Todo, TodoRepository } from './types';
-import Login from './components/Login';
+import AuthRouter from './components/auth/AuthRouter';
 import MainList from './components/main-list/MainList';
 import StorageModeToggle from './components/StorageModeToggle';
 import InstallButton from './components/InstallButton';
@@ -96,7 +96,7 @@ function FirebaseApp({ mode, onModeChange }: ModeProps) {
     return <div className="app"><p className="muted">{t.loading}</p></div>;
   }
   if (!user) {
-    return <Login mode={mode} onModeChange={onModeChange} />;
+    return <AuthRouter onUseLocal={() => onModeChange('local')} />;
   }
   return (
     <FirebaseAuthenticated

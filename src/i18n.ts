@@ -25,16 +25,11 @@ export const t = {
   modeCloud: 'Chmura',
   modeGroupLabel: 'Tryb przechowywania',
 
-  // Login (legacy keys kept until Login.tsx is removed in Phase 9 PLAN-04)
+  // Auth (Phase 9 redesign — auth flow)
   loginTitle: 'Zaloguj się',
   loginHint: 'Bez publicznej rejestracji.',
-  emailPlaceholder: 'E-mail',
-  passwordPlaceholder: 'Hasło',
   loginSubmit: 'Zaloguj',
-  loginSubmitBusy: 'Logowanie…',
   loginFailed: 'Logowanie nie powiodło się',
-
-  // Auth (Phase 9 redesign — auth flow)
   loginEmail: 'E-mail',
   loginPassword: 'Hasło',
   loginForgot: 'Nie pamiętasz hasła?',
@@ -51,19 +46,6 @@ export const t = {
   resetSentBody:
     'Wysłaliśmy link do zresetowania hasła na podany adres. Link wygasa po godzinie.',
   resetBack: 'Wróć do logowania',
-
-  // Reset password (legacy keys — removed in Phase 9 PLAN-04)
-  resetPasswordTitle: 'Resetuj hasło',
-  resetPasswordHint:
-    'Podaj adres e-mail powiązany z kontem. Wyślemy link do zresetowania hasła.',
-  resetPasswordSubmit: 'Wyślij link resetujący',
-  resetPasswordSubmitBusy: 'Wysyłanie…',
-  resetPasswordSuccess:
-    'Wysłaliśmy link do zresetowania hasła. Sprawdź skrzynkę odbiorczą.',
-  resetPasswordFailed: 'Nie udało się wysłać linku resetującego',
-  resetPasswordEmailRequired: 'Podaj adres e-mail',
-  resetPasswordOpen: 'Nie pamiętasz hasła?',
-  resetPasswordBackToLogin: 'Wróć do logowania',
 
   // Firebase not configured
   notConfigured:

@@ -84,7 +84,7 @@ vi.mock('./services/reminderScheduler', () => ({
   createReminderScheduler: () => ({ sync: vi.fn(), stop: vi.fn() }),
 }));
 
-vi.mock('./components/Login', () => ({ default: () => null }));
+vi.mock('./components/auth/AuthRouter', () => ({ default: () => null }));
 vi.mock('./components/main-list/MainList', () => ({ default: () => null }));
 vi.mock('./components/StorageModeToggle', () => ({ default: () => null }));
 vi.mock('./components/InstallButton', () => ({ default: () => null }));
