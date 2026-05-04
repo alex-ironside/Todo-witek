@@ -42,10 +42,15 @@ export const usePushNotifications = (userId: string): PushState => {
     const perm = Notification.permission;
     if (perm === 'denied') { setStatus('denied'); return; }
     if (perm === 'granted') {
-      getCurrentDeviceToken(userId).then((t) => {
-        if (t) { setStatus('enabled'); setToken(t); }
-        else { setStatus('idle'); }
-      });
+      getCurrentDeviceToken(userId)
+        .then((t) => {
+          if (t) { setStatus('enabled'); setToken(t); }
+          else { setStatus('idle'); }
+        })
+        .catch((e: unknown) => {
+          setStatus('error');
+          setErrorMessage(e instanceof Error ? e.message : String(e));
+        });
     }
   }, [userId]);
 

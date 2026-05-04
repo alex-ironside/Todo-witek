@@ -126,6 +126,20 @@ describe('usePushNotifications', () => {
     expect(result.current.status).toBe('idle');
   });
 
+  it("mount-time getCurrentDeviceToken rejection surfaces as status='error' instead of being swallowed", async () => {
+    Object.defineProperty(globalThis, 'Notification', {
+      value: { permission: 'granted' },
+      configurable: true,
+      writable: true,
+    });
+    mockGetCurrentDeviceToken.mockRejectedValue(new Error('SW registration failed'));
+    const { usePushNotifications } = await importHook();
+    const { result } = renderHook(() => usePushNotifications('user-1'));
+    await act(async () => {});
+    expect(result.current.status).toBe('error');
+    expect(result.current.errorMessage).toBe('SW registration failed');
+  });
+
   // enable() action tests
 
   it('enable() transitions idle to enabled after permission granted and registerCurrentDeviceForPush succeeds', async () => {
