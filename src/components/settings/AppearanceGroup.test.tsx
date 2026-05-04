@@ -36,9 +36,12 @@ describe('AppearanceGroup', () => {
     const { getByLabelText } = render(
       <AppearanceGroup accent="amber" onChange={() => {}} />
     );
+    // jsdom normalizes "0.10" → "0.1"; compare on collapsed-zero form.
+    const collapse = (s: string) => s.replace(/(\d)\.(\d+?)0+(\D|$)/g, '$1.$2$3');
     for (const key of ACCENT_KEYS) {
       const sw = getByLabelText(ACCENTS[key].label);
-      expect(sw.getAttribute('style') ?? '').toContain(ACCENTS[key].oklch);
+      const style = sw.getAttribute('style') ?? '';
+      expect(collapse(style)).toContain(collapse(ACCENTS[key].oklch));
     }
   });
 
