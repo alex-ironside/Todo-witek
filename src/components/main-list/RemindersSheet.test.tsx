@@ -100,6 +100,26 @@ describe('RemindersSheet', () => {
     expect(input.getAttribute('aria-hidden')).not.toBe('true');
   });
 
+  // iOS Safari opens the native picker the moment a datetime-local input
+  // receives focus. Sheet auto-focuses the first focusable child on open, so
+  // the datetime-local must NOT be that first child — otherwise the picker
+  // pops on sheet mount instead of when the user taps "Dodaj termin", and the
+  // input stays focused so subsequent taps don't reopen it.
+  it('places a non-input focusable before the datetime-local in DOM order', () => {
+    const repo = makeRepo();
+    render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
+    const focusables = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'button,input,a,select,textarea,[tabindex]:not([tabindex="-1"])'
+      )
+    );
+    const input = screen.getByLabelText('Dodaj termin') as HTMLInputElement;
+    const inputIndex = focusables.indexOf(input);
+    expect(inputIndex).toBeGreaterThan(0);
+    const first = focusables[0];
+    expect(first.tagName).not.toBe('INPUT');
+  });
+
   it('changing the hidden input adds a reminder snapped to 15 min', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));

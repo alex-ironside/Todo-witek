@@ -69,8 +69,23 @@ export default function RemindersSheet({ todo, onClose }: Props) {
           ))}
         </div>
       )}
+      {/*
+        Anuluj is intentionally first in DOM order so Sheet's autofocus
+        lands on it. iOS Safari opens the native datetime-local picker
+        immediately on `.focus()` — if the input were the first focusable
+        child, the picker would pop the moment the sheet mounts and stay
+        focused (so subsequent taps wouldn't reopen it). Flex `order`
+        preserves the visible layout: Dodaj termin on top, Anuluj below.
+      */}
       <div className="flex flex-col gap-2 pt-4">
-        <div className="relative w-full h-12">
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full text-textDim h-12 order-2"
+        >
+          {t.cancel}
+        </button>
+        <div className="relative w-full h-12 order-1">
           <div
             aria-hidden="true"
             className="absolute inset-0 flex items-center justify-center bg-accent text-accentInk rounded-field font-medium pointer-events-none"
@@ -86,13 +101,6 @@ export default function RemindersSheet({ todo, onClose }: Props) {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full text-textDim h-12"
-        >
-          {t.cancel}
-        </button>
       </div>
     </Sheet>
   );
