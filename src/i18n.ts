@@ -99,6 +99,18 @@ export const t = {
     'Zapisuje token FCM tego urządzenia, aby Cloud Function mogła dostarczać przypomnienia, nawet gdy aplikacja jest zamknięta.',
   pushSetupFailed: 'Konfiguracja powiadomień nie powiodła się',
 
+  // Settings sheet (Phase 8)
+  signedInAs: 'Zalogowany jako',
+  appearance: 'Wygląd',
+  accentLabel: 'Kolor akcentu',
+  storage: 'Przechowywanie',
+  pushTitle: 'Powiadomienia push',
+  pushHelper: 'Przypomnienia działają, gdy aplikacja jest zamknięta.',
+  pushOn: 'Włączone',
+  pushOff: 'Wyłączone',
+  installTitle: 'Zainstaluj aplikację',
+  installHelper: 'Dodaj do ekranu początkowego, aby otwierać szybciej.',
+
   // Install (PWA)
   installApp: 'Zainstaluj aplikację',
   installIosTitle: 'Zainstaluj na iOS',
