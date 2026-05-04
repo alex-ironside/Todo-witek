@@ -17,6 +17,14 @@ vi.mock('../../hooks/useTodos', () => ({
   useTodos: () => ({ todos: mockTodos, loading: false, error: null }),
 }));
 
+vi.mock('../../hooks/useAccent', () => ({
+  useAccent: () => ['amber', vi.fn()] as const,
+}));
+
+vi.mock('../../hooks/useStorageMode', () => ({
+  useStorageMode: () => ['local', vi.fn()] as const,
+}));
+
 import MainList from './MainList';
 
 function makeRepo(): TodoRepository {
@@ -83,6 +91,30 @@ describe('MainList', () => {
     const { getByLabelText } = render(wrap(<MainList onOpenSettings={spy} />));
     fireEvent.click(getByLabelText('Otwórz ustawienia'));
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('cog opens the SettingsSheet (titled Ustawienia)', () => {
+    const { getByLabelText, getAllByRole } = render(wrap(<MainList />));
+    // Settings sheet exists but starts closed.
+    const sheetBefore = getAllByRole('dialog').find(
+      (d) => d.getAttribute('aria-label') === 'Ustawienia'
+    );
+    expect(sheetBefore?.className).toContain('translate-y-full');
+    fireEvent.click(getByLabelText('Otwórz ustawienia'));
+    const sheetAfter = getAllByRole('dialog').find(
+      (d) => d.getAttribute('aria-label') === 'Ustawienia'
+    );
+    expect(sheetAfter?.className).toContain('translate-y-0');
+  });
+
+  it('SettingsSheet hides AccountGroup and PushGroup when no email/push props', () => {
+    const { getByLabelText, queryByText } = render(wrap(<MainList />));
+    fireEvent.click(getByLabelText('Otwórz ustawienia'));
+    expect(queryByText('Zalogowany jako')).toBeNull();
+    expect(queryByText('Powiadomienia push')).toBeNull();
+    // Always-on groups visible.
+    expect(queryByText('Wygląd')).not.toBeNull();
+    expect(queryByText('Przechowywanie')).not.toBeNull();
   });
 
   it('switching tab calls setCategory', () => {

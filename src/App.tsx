@@ -4,9 +4,9 @@ import { useAuth } from './hooks/useAuth';
 import { useTodos } from './hooks/useTodos';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useStorageMode } from './hooks/useStorageMode';
-import { usePushNotifications } from './hooks/usePushNotifications';
+import { usePushNotifications, type PushState } from './hooks/usePushNotifications';
+import { usePwaInstall } from './hooks/usePwaInstall';
 import { RepoProvider } from './hooks/RepoContext';
-import PushToggle from './components/PushToggle';
 import { logout } from './firebase/auth';
 import { isConfigured } from './firebase/config';
 import { createLocalTodoRepo } from './repos/localTodoRepo';
@@ -23,8 +23,6 @@ import type { StorageMode } from './services/storageMode';
 import type { Todo, TodoRepository } from './types';
 import AuthRouter from './components/auth/AuthRouter';
 import MainList from './components/main-list/MainList';
-import StorageModeToggle from './components/StorageModeToggle';
-import InstallButton from './components/InstallButton';
 import { t } from './i18n';
 
 export default function App() {
@@ -50,10 +48,15 @@ function FirebaseNotConfigured({ mode, onModeChange }: ModeProps) {
       <div className="card">
         <div className="row" style={{ justifyContent: 'space-between' }}>
           <h1>{t.brand}</h1>
-          <div className="row">
-            <InstallButton />
-            <StorageModeToggle mode={mode} onChange={onModeChange} />
-          </div>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() =>
+              onModeChange(mode === 'local' ? 'firebase' : 'local')
+            }
+          >
+            {mode === 'local' ? t.modeCloud : t.modeLocal}
+          </button>
         </div>
         <p>
           {t.notConfigured} <code>src/firebase/config.ts</code>{' '}
@@ -121,6 +124,10 @@ function FirebaseAuthenticated({
 }: FirebaseAuthenticatedProps) {
   const repo = useMemo(() => createFirebaseTodoRepo(user.uid), [user.uid]);
   const push = usePushNotifications(user.uid);
+  const signOut = async () => {
+    await push.disable();
+    await logout();
+  };
 
   return (
     <RepoProvider repo={repo}>
@@ -129,18 +136,12 @@ function FirebaseAuthenticated({
         onModeChange={onModeChange}
         online={online}
         identity={user.email || t.loginTitle}
-        signOut={async () => { await push.disable(); await logout(); }}
+        email={user.email}
+        signOut={signOut}
         repo={repo}
+        push={push}
         pushBanner={push.bannerMessage}
-      >
-        <div className="card">
-          <PushToggle
-            status={push.status}
-            enable={push.enable}
-            disable={push.disable}
-          />
-        </div>
-      </Shell>
+      />
     </RepoProvider>
   );
 }
@@ -148,39 +149,39 @@ function FirebaseAuthenticated({
 interface ShellProps extends ModeProps {
   online: boolean;
   identity: string;
+  email?: string | null;
   signOut: (() => void) | null;
   repo: TodoRepository;
   children?: ReactNode;
+  push?: PushState | null;
   pushBanner?: string | null;
 }
 
 function Shell({
   mode,
-  onModeChange,
   online,
   identity,
+  email = null,
   signOut,
   repo,
   children,
+  push = null,
   pushBanner,
 }: ShellProps) {
   const { todos, error } = useTodos(repo);
   useReminderScheduler(todos, repo);
+  const { canInstall, promptInstall } = usePwaInstall();
 
   return (
     <div className="app">
-      <MainList identity={identity} />
-      {/* Temporary footer strip — Phase 8 absorbs these into Settings. */}
-      <div className="header">
-        <div className="row">
-          <InstallButton />
-          <StorageModeToggle mode={mode} onChange={onModeChange} />
-          <span className="muted">{identity}</span>
-          {signOut && (
-            <button className="ghost" onClick={signOut}>{t.signOut}</button>
-          )}
-        </div>
-      </div>
+      <MainList
+        identity={identity}
+        email={email}
+        onSignOut={signOut ?? undefined}
+        push={push}
+        canInstall={canInstall}
+        onInstall={() => { void promptInstall(); }}
+      />
       {pushBanner && <div className="banner warn">{pushBanner}</div>}
       {!online && mode === 'firebase' && (
         <div className="banner warn">{t.offlineBanner}</div>

@@ -46,8 +46,6 @@ vi.mock('./hooks/usePushNotifications', () => ({
   }),
 }));
 
-vi.mock('./components/PushToggle', () => ({ default: () => null }));
-
 const mockSetMode = vi.fn();
 vi.mock('./hooks/useStorageMode', () => ({
   useStorageMode: () => ['firebase', mockSetMode] as const,
@@ -85,9 +83,20 @@ vi.mock('./services/reminderScheduler', () => ({
 }));
 
 vi.mock('./components/auth/AuthRouter', () => ({ default: () => null }));
-vi.mock('./components/main-list/MainList', () => ({ default: () => null }));
-vi.mock('./components/StorageModeToggle', () => ({ default: () => null }));
-vi.mock('./components/InstallButton', () => ({ default: () => null }));
+
+// MainList is partially mocked: it owns the SettingsSheet that contains the
+// Wyloguj button used by the signOut regression test. Render a minimal
+// surrogate that exposes the props we need to assert on.
+vi.mock('./components/main-list/MainList', () => ({
+  default: (props: { onSignOut?: () => void; email?: string | null }) => (
+    <div data-testid="mainlist-mock">
+      {props.email && <span>{props.email}</span>}
+      {props.onSignOut && (
+        <button onClick={props.onSignOut}>Wyloguj</button>
+      )}
+    </div>
+  ),
+}));
 
 // ── Dynamic import after mocks are set up ──
 const importApp = async () => (await import('./App')).default;

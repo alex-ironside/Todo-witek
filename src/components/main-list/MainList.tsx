@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRepo } from '../../hooks/RepoContext';
 import { useTodos } from '../../hooks/useTodos';
 import { useSelectedCategory } from '../../hooks/useSelectedCategory';
+import { useAccent } from '../../hooks/useAccent';
+import { useStorageMode } from '../../hooks/useStorageMode';
 import { DEFAULT_CATEGORY, type TodoCategory } from '../../types';
 import { t } from '../../i18n';
 import AppBar from './AppBar';
@@ -13,10 +15,19 @@ import EmptyState from './EmptyState';
 import Drawer from './Drawer';
 import PopoverMenu, { type PopoverMenuItem } from './PopoverMenu';
 import RemindersSheet from './RemindersSheet';
+import SettingsSheet from '../settings/SettingsSheet';
+import type { PushState } from '../../hooks/usePushNotifications';
 
 interface MainListProps {
   identity?: string;
+  // Phase 8: settings is now owned by MainList itself; callers no longer
+  // need to wire onOpenSettings (kept optional for backward-compat).
   onOpenSettings?: () => void;
+  email?: string | null;
+  onSignOut?: () => void;
+  push?: PushState | null;
+  canInstall?: boolean;
+  onInstall?: () => void;
 }
 
 const noop = (): void => {};
@@ -29,13 +40,26 @@ const noop = (): void => {};
 // onOpenReminders (Phase 7 wires the actual sheet).
 export default function MainList({
   identity = '',
-  onOpenSettings = noop,
+  onOpenSettings,
+  email = null,
+  onSignOut = noop,
+  push = null,
+  canInstall = false,
+  onInstall = noop,
 }: MainListProps) {
   const repo = useRepo();
   const { todos } = useTodos(repo);
   const [category, setCategory] = useSelectedCategory();
+  const [accent, setAccent] = useAccent();
+  const [mode, setMode] = useStorageMode();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
+
+  const openSettings = () => {
+    setSettingsOpen(true);
+    onOpenSettings?.();
+  };
 
   const [menuForId, setMenuForId] = useState<string | null>(null);
   const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
@@ -143,7 +167,7 @@ export default function MainList({
       <AppBar
         ref={hamburgerRef}
         onOpenDrawer={() => setDrawerOpen(true)}
-        onOpenSettings={onOpenSettings}
+        onOpenSettings={openSettings}
       />
       <CategoryTabsBar value={category} onChange={setCategory} />
       <AddTodoRow category={category} />
@@ -172,7 +196,7 @@ export default function MainList({
         selectedCategory={category}
         onSelectCategory={setCategory}
         counts={counts}
-        onOpenSettings={onOpenSettings}
+        onOpenSettings={openSettings}
         returnFocusRef={hamburgerRef}
       />
       <PopoverMenu
@@ -184,6 +208,19 @@ export default function MainList({
       <RemindersSheet
         todo={remindersForTodo}
         onClose={() => setRemindersForId(null)}
+      />
+      <SettingsSheet
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        email={email}
+        onSignOut={onSignOut}
+        accent={accent}
+        onAccentChange={setAccent}
+        mode={mode}
+        onModeChange={setMode}
+        push={push}
+        canInstall={canInstall}
+        onInstall={onInstall}
       />
     </div>
   );
