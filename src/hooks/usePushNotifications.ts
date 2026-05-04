@@ -72,7 +72,9 @@ export const usePushNotifications = (userId: string): PushState => {
     setStatus('requesting');
     const permission = await requestNotificationPermission();
     if (permission === 'denied') { setStatus('denied'); return; }
-    if (permission !== 'granted') { return; }
+    // 'default' (iOS dismisses prompt or suppresses it when gesture is lost) and
+    // 'unsupported' both resolve back to idle so the button re-enables.
+    if (permission !== 'granted') { setStatus('idle'); return; }
     setStatus('registering');
     try {
       const t = await registerCurrentDeviceForPush(userId);

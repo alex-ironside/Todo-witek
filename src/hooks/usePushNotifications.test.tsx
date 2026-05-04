@@ -139,6 +139,15 @@ describe('usePushNotifications', () => {
     expect(result.current.token).toBe('tok-new');
   });
 
+  it("enable() returns status to 'idle' when permission resolves to 'default' (iOS prompt dismissed)", async () => {
+    mockRequestPermission.mockResolvedValue('default');
+    const { usePushNotifications } = await importHook();
+    const { result } = renderHook(() => usePushNotifications('user-1'));
+    await act(async () => { await result.current.enable(); });
+    expect(result.current.status).toBe('idle');
+    expect(mockRegisterCurrentDeviceForPush).not.toHaveBeenCalled();
+  });
+
   it('enable() transitions to denied when permission is denied', async () => {
     mockRequestPermission.mockResolvedValue('denied');
     const { usePushNotifications } = await importHook();
