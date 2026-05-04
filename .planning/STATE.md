@@ -2,71 +2,60 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Mobile Redesign
-status: planning
-last_updated: "2026-05-04T00:00:00.000Z"
+status: Complete
+last_updated: "2026-05-04T15:30:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 7
+  total_plans: 30
+  completed_plans: 30
 ---
 
 # Project State — Todo Witek
 
 ## Current Phase
 
-Phase 3: Theme Tokens & Accent System — NOT STARTED
+v1.1 milestone shipped 2026-05-04. Awaiting next-milestone kickoff.
 
 ## Position
 
 - Current plan: —
-- Last completed: v1.0 milestone shipped 2026-04-28
-- Stopped at: Awaiting Phase 3 kickoff (theme tokens)
+- Last completed: v1.1 Mobile Redesign milestone — 7 phases, 30 plans, 372 tests passing
+- Stopped at: Milestone closed; ready for `/gsd-new-milestone` when planning v1.2
 
 ## Accumulated Context
 
-### Roadmap Evolution
+### Decisions (v1.1)
 
-- Phase 1 added: add full push notifications setup
-- Phase 2 added: Firestore API enablement + GitHub Actions reminder cron (every 15 min)
-
-### Decisions
-
-- vi.resetModules() required in beforeEach to reset _messaging singleton between tests
-- navigator.serviceWorker stubbed via Object.defineProperty with configurable:true before module loads
-- config mock provides vapidKey='test-vapid-key' to avoid the !vapidKey null guard in getFcmToken
-- Import firebaseConfig directly in vite.config.ts for build-time SW stamping (single source of truth)
-- Vite writeBundle plugin placed after VitePWA so public/ assets are already copied before stamping
-- public/firebase-messaging-sw.js kept as clean template; dist/ copy stamped at build time
-- LocalApp requestNotificationPermission call intentionally preserved (local mode auto-permission is accepted behavior)
-- vapidKey removed from App.tsx imports — no longer referenced after replacing old JSX guard with PushToggle
-- pushBanner rendered before offline/error banners so foreground FCM messages appear at top of banner region
-
-### Performance Metrics
-
-| Phase | Plan | Duration | Tasks | Files |
-|-------|------|----------|-------|-------|
-| 01    | 01   | 10min    | 2     | 2     |
-| 01    | 03   | 8min     | 1     | 1     |
-| 01    | 06   | ~2min    | 2     | 2     |
-
-- Cast `error as { code?: string }` in App.tsx for FirebaseError.code — minimal safe cast, avoids `any`
-- vi.mock() unusable in .cjs Vitest test files (ESM-only module; hoisting runs before globals init) → dependency injection: sendDueReminders(messagingOverride) instead
-- Firestore Admin SDK query returns tokens alphabetically in emulator — Test D mock responses ordered to match actual index positions
-- scripts/ excluded from root vite.config.ts test config (emulator-dependent tests must not run in main React suite)
+- Tailwind v4 with CSS-first `@theme` directive — single source for OKLCH tokens; auto-generated utilities (bg-bg, text-textDim, …); no `tailwind.config.js`.
+- Accent runtime swap via `document.documentElement.style.setProperty('--color-accent', ...)`.
+- Accent persistence: `localStorage` always; cloud users get Firestore mirror at `users/{uid}/preferences/accent`. 250ms debounced cloud writes; cloud-wins on auth-ready reconcile.
+- All ephemeral UI state (drawer open, popover anchor, editing id, reminders sheet, settings sheet) lives INSIDE MainList — no global store, no router.
+- Drag-to-reorder: dnd-kit kept; activation switched to long-press (PointerSensor 250ms / 5px tolerance). No visible handle.
+- Animations: CSS only (no framer-motion / react-spring). All respect `prefers-reduced-motion`.
+- Sheet primitive (Phase 7) reused by SettingsSheet (Phase 8) — single drag-down/scrim/Esc model.
+- Auth state machine local to AuthRouter — no router dep for one screen flow.
+- Replaced (not deprecated) all legacy components per CLAUDE.md "no backwards-compat hacks".
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close on 2026-04-28:
+Items acknowledged and deferred at v1.1 milestone close on 2026-05-04:
 
 | Category | Item | Status |
 |----------|------|--------|
-| debug | data-is-not-synched | root_cause_found — Firestore API now enabled (permission-denied → security rules, not API disabled). Debug session resolved. |
-| verification | Phase 01 human_needed | Live FCM opt-in/out/banner tests require real browser + VAPID key |
-| setup | FIREBASE_SERVICE_ACCOUNT_KEY | GitHub secret not yet set — user must configure before cron fires |
+| verification | Phase 03 human_needed | Live picker visual swap (now Phase 8 wired) + firestore.rules deploy verification |
+| verification | Phase 04 human_needed | Animation timings (180/200/220/250ms) + relative-time tick |
+| verification | Phase 05 human_needed | 240ms slide animation + swipe-close gesture + focus return |
+| verification | Phase 06 human_needed | Popover positioning + 2s confirm feel + Zapisz/blur race |
+| verification | Phase 07 human_needed | 220ms slide-up + drag-down threshold + showPicker() across browsers |
+| verification | Phase 08 human_needed | Live accent swap + push permission OS prompt + install row visibility |
+| verification | Phase 09 human_needed | Real Firebase login + reset email arrival + busy-state feedback |
+| code | Phase 06 PopoverMenu scroll-out auto-close | specified in CONTEXT, not wired (low impact — click-outside already closes) |
+| debug | data-is-not-synched | root_cause_found at v1.0 — Firestore API now enabled. Debug session resolved. |
+| setup | FIREBASE_SERVICE_ACCOUNT_KEY | GitHub secret carry-over from v1.0 — user must configure before cron fires in production |
 
 ## Last Session
 
-- Timestamp: 2026-04-28T12:28:00Z
-- Stopped at: Completed 02-PLAN-02.md (milestone complete)
+- Timestamp: 2026-05-04T15:30:00Z
+- Stopped at: v1.1 milestone shipped (audit + complete)
 - Resume file: None
