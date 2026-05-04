@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RemindersSheet from './RemindersSheet';
 import { RepoProvider } from '../../hooks/RepoContext';
@@ -35,27 +35,6 @@ const wrap = (ui: React.ReactNode, repo: TodoRepository) => (
 );
 
 describe('RemindersSheet', () => {
-  let originalShowPicker: unknown;
-
-  beforeEach(() => {
-    // Stub showPicker on the prototype so unit tests can spy on it.
-    originalShowPicker = (
-      HTMLInputElement.prototype as unknown as { showPicker?: unknown }
-    ).showPicker;
-    (HTMLInputElement.prototype as unknown as { showPicker: () => void }).showPicker =
-      vi.fn();
-  });
-
-  afterEach(() => {
-    if (originalShowPicker === undefined) {
-      delete (HTMLInputElement.prototype as unknown as { showPicker?: unknown })
-        .showPicker;
-    } else {
-      (HTMLInputElement.prototype as unknown as { showPicker: unknown }).showPicker =
-        originalShowPicker;
-    }
-  });
-
   it('hides the dialog when todo is null', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={null} onClose={() => {}} />, repo));
@@ -107,14 +86,18 @@ describe('RemindersSheet', () => {
     });
   });
 
-  it('clicking Dodaj termin invokes showPicker on the hidden input', () => {
+  // iOS Safari does not implement showPicker() for datetime-local. The reliable
+  // cross-browser pattern is to overlay the real input on top of the visual
+  // button so the user's tap lands directly on the input — the OS then opens
+  // its native picker via standard input activation (no JS API needed).
+  it('exposes the datetime-local input as the labeled "Dodaj termin" affordance', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
-    fireEvent.click(screen.getByRole('button', { name: 'Dodaj termin' }));
-    const showPicker = (
-      HTMLInputElement.prototype as unknown as { showPicker: ReturnType<typeof vi.fn> }
-    ).showPicker;
-    expect(showPicker).toHaveBeenCalled();
+    const input = screen.getByLabelText('Dodaj termin') as HTMLInputElement;
+    expect(input.tagName).toBe('INPUT');
+    expect(input.type).toBe('datetime-local');
+    expect(input.tabIndex).not.toBe(-1);
+    expect(input.getAttribute('aria-hidden')).not.toBe('true');
   });
 
   it('changing the hidden input adds a reminder snapped to 15 min', () => {

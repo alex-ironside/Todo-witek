@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from 'react';
+import { type ChangeEvent } from 'react';
 import Sheet from './Sheet';
 import ReminderListItem from './ReminderListItem';
 import { useRepo } from '../../hooks/RepoContext';
@@ -19,27 +19,17 @@ const newReminderId = (): string => {
 };
 
 // Bottom-sheet UI for managing one todo's reminders. Owns no business state
-// itself — all reads/writes go through the injected repo. The hidden
-// datetime-local input is the click target for the OS-native picker invoked
-// via showPicker(); we keep it visually hidden so the spec's primary
-// `Dodaj termin` button stays the visible affordance.
+// itself — all reads/writes go through the injected repo.
+//
+// iOS Safari does not implement HTMLInputElement.showPicker() for
+// datetime-local, so any JS-driven approach silently no-ops there. Instead we
+// overlay a real `<input type="datetime-local">` on top of the visible
+// affordance with opacity-0; the user's touch lands directly on the input and
+// the OS opens its native picker through standard input activation. Works
+// uniformly on iOS Safari, Android Chrome, and desktop browsers.
 export default function RemindersSheet({ todo, onClose }: Props) {
   const repo = useRepo();
-  const inputRef = useRef<HTMLInputElement>(null);
   const reminders: Reminder[] = todo?.reminders ?? [];
-
-  const openPicker = () => {
-    const el = inputRef.current;
-    if (!el) return;
-    try {
-      // showPicker is supported in modern Chromium/Safari/Firefox; older
-      // browsers (or jsdom in tests with no stub) fall back silently — the
-      // input is in the DOM and the user can still focus it by Tab.
-      el.showPicker?.();
-    } catch {
-      // Throws if input is disconnected/not focusable; nothing to do here.
-    }
-  };
 
   const handleAdd = (e: ChangeEvent<HTMLInputElement>) => {
     if (!todo) return;
@@ -79,24 +69,23 @@ export default function RemindersSheet({ todo, onClose }: Props) {
           ))}
         </div>
       )}
-      <input
-        ref={inputRef}
-        data-testid="reminder-input"
-        type="datetime-local"
-        step="900"
-        onChange={handleAdd}
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-      />
       <div className="flex flex-col gap-2 pt-4">
-        <button
-          type="button"
-          onClick={openPicker}
-          className="w-full bg-accent text-accentInk rounded-field h-12 font-medium"
-        >
-          {t.reminderAdd}
-        </button>
+        <div className="relative w-full h-12">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center bg-accent text-accentInk rounded-field font-medium pointer-events-none"
+          >
+            {t.reminderAdd}
+          </div>
+          <input
+            data-testid="reminder-input"
+            type="datetime-local"
+            step="900"
+            onChange={handleAdd}
+            aria-label={t.reminderAdd}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        </div>
         <button
           type="button"
           onClick={onClose}
