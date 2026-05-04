@@ -55,9 +55,12 @@ export const t = {
   tabSluzbowe: 'Służbowe',
   categoryGroupLabel: 'Kategoria',
 
-  // TodoForm
-  todoPlaceholder: 'Dodaj zadanie…',
+  // TodoForm / AddTodoRow
+  todoPlaceholder: 'Co dziś robisz?',
   todoAdd: 'Dodaj',
+  empty: 'Brak zadań.',
+  emptyHint: 'Dodaj pierwsze powyżej.',
+  done: 'Wykonane',
   todoSaveError: 'Nie udało się zapisać',
   keepInputToggle: 'Zachowaj tekst po dodaniu',
 
