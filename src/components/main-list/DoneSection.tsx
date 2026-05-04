@@ -5,12 +5,21 @@ import TodoRow from './TodoRow';
 
 interface DoneSectionProps {
   todos: Todo[];
-  onOpenOverflow: (todoId: string) => void;
+  onOpenOverflow: (todoId: string, anchorRect: DOMRect) => void;
+  editingId?: string | null;
+  onSaveEdit?: (id: string, title: string) => void;
+  onCancelEdit?: (id: string) => void;
 }
 
 // Collapsed-by-default "Wykonane (n)" section. Uses CSS grid-template-rows
 // 0fr→1fr trick for a smooth height transition with no max-height hack.
-export default function DoneSection({ todos, onOpenOverflow }: DoneSectionProps) {
+export default function DoneSection({
+  todos,
+  onOpenOverflow,
+  editingId = null,
+  onSaveEdit,
+  onCancelEdit,
+}: DoneSectionProps) {
   const [open, setOpen] = useState(false);
   if (todos.length === 0) return null;
   return (
@@ -41,7 +50,13 @@ export default function DoneSection({ todos, onOpenOverflow }: DoneSectionProps)
           <ul className="divide-y divide-hairlineSoft">
             {todos.map((todo) => (
               <li key={todo.id}>
-                <TodoRow todo={todo} onOpenOverflow={onOpenOverflow} />
+                <TodoRow
+                  todo={todo}
+                  onOpenOverflow={onOpenOverflow}
+                  isEditing={editingId === todo.id}
+                  onSaveEdit={onSaveEdit}
+                  onCancelEdit={onCancelEdit}
+                />
               </li>
             ))}
           </ul>

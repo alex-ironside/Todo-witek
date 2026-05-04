@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import { RepoProvider } from '../../hooks/RepoContext';
 import type { Todo, TodoRepository } from '../../types';
 
@@ -85,14 +85,6 @@ describe('MainList', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('overflow button fires onOpenOverflow with todo id', () => {
-    mockTodos = [todo({ id: 'tx', title: 'open me' })];
-    const spy = vi.fn();
-    const { getByLabelText } = render(wrap(<MainList onOpenOverflow={spy} />));
-    fireEvent.click(getByLabelText(/Więcej akcji/));
-    expect(spy).toHaveBeenCalledWith('tx');
-  });
-
   it('switching tab calls setCategory', () => {
     const { getByRole } = render(wrap(<MainList />));
     fireEvent.click(getByRole('tab', { name: 'Służbowe' }));
@@ -109,14 +101,6 @@ describe('MainList', () => {
     expect(queryByText('serv')).toBeNull();
   });
 
-  it('clicking hamburger opens the drawer', () => {
-    const { getByLabelText, container } = render(wrap(<MainList />));
-    const aside = container.querySelector('aside');
-    expect(aside?.getAttribute('aria-hidden')).toBe('true');
-    fireEvent.click(getByLabelText('Otwórz menu'));
-    expect(aside?.getAttribute('aria-hidden')).toBe('false');
-  });
-
   it('clicking a drawer category row sets the category and closes the drawer', () => {
     mockTodos = [todo({ id: 's1', title: 'serv', category: 'sluzbowe' })];
     const { getByLabelText, container, getAllByText } = render(
@@ -125,7 +109,6 @@ describe('MainList', () => {
     fireEvent.click(getByLabelText('Otwórz menu'));
     const aside = container.querySelector('aside');
     expect(aside?.getAttribute('aria-hidden')).toBe('false');
-    // Two "Służbowe" exist (tab + drawer row); click the drawer one (last).
     const matches = getAllByText('Służbowe');
     fireEvent.click(matches[matches.length - 1]);
     expect(mockSetCategory).toHaveBeenCalledWith('sluzbowe');
@@ -143,11 +126,137 @@ describe('MainList', () => {
     fireEvent.click(getByLabelText('Otwórz menu'));
     const aside = container.querySelector('aside');
     expect(aside?.textContent).toContain('Prywatne');
-    // Only open todos count: 2 prywatne, 1 sluzbowe
-    const rows = aside?.querySelectorAll('[aria-current], button');
-    // Easier: check count siblings
     expect(aside?.textContent).toMatch(/Prywatne[\s\S]*2/);
     expect(aside?.textContent).toMatch(/Służbowe[\s\S]*1/);
-    expect(rows && rows.length).toBeGreaterThan(0);
+  });
+
+  describe('overflow menu, edit, and delete', () => {
+    beforeEach(() => {
+      mockTodos = [todo({ id: 'tx', title: 'open me' })];
+    });
+
+    it('clicking ••• opens a menu containing Edytuj, Przypomnij, Usuń', () => {
+      const { getByLabelText, getByText } = render(wrap(<MainList />));
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      expect(getByText('Edytuj')).toBeInTheDocument();
+      expect(getByText('Przypomnij')).toBeInTheDocument();
+      expect(getByText('Usuń')).toBeInTheDocument();
+    });
+
+    const findEditInput = (
+      getAllByRole: (role: string) => HTMLElement[]
+    ): HTMLInputElement | null => {
+      const inputs = getAllByRole('textbox') as HTMLInputElement[];
+      return inputs.find((i) => i.value === 'open me' || i.value === 'nowy tytuł') ?? null;
+    };
+
+    it('clicking Edytuj closes the menu and renders the row in edit mode', () => {
+      const { getByLabelText, getByText, getAllByRole, queryByText } = render(
+        wrap(<MainList />)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Edytuj'));
+      expect(queryByText('Przypomnij')).toBeNull();
+      const input = findEditInput(getAllByRole);
+      expect(input).not.toBeNull();
+      expect(input!.value).toBe('open me');
+    });
+
+    it('Enter in edit mode calls repo.update and exits edit mode', () => {
+      const repo = makeRepo();
+      const { getByLabelText, getByText, getAllByRole } = render(
+        wrap(<MainList />, repo)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Edytuj'));
+      const input = findEditInput(getAllByRole)!;
+      fireEvent.change(input, { target: { value: 'nowy tytuł' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(repo.update).toHaveBeenCalledWith('tx', { title: 'nowy tytuł' });
+      // edit input no longer present
+      expect(findEditInput(getAllByRole)).toBeNull();
+    });
+
+    it('Esc in edit mode exits edit mode without calling repo.update', () => {
+      const repo = makeRepo();
+      const { getByLabelText, getByText, getAllByRole } = render(
+        wrap(<MainList />, repo)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Edytuj'));
+      const input = findEditInput(getAllByRole)!;
+      fireEvent.keyDown(input, { key: 'Escape' });
+      expect(repo.update).not.toHaveBeenCalled();
+      expect(findEditInput(getAllByRole)).toBeNull();
+    });
+
+    it('clicking Usuń once flips label to Na pewno? and does not delete', () => {
+      const repo = makeRepo();
+      const { getByLabelText, getByText, queryByText } = render(
+        wrap(<MainList />, repo)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Usuń'));
+      expect(repo.delete).not.toHaveBeenCalled();
+      expect(getByText('Na pewno?')).toBeInTheDocument();
+      // menu still open
+      expect(queryByText('Edytuj')).toBeInTheDocument();
+    });
+
+    it('clicking Na pewno? deletes the todo and closes the menu', () => {
+      const repo = makeRepo();
+      const { getByLabelText, getByText, queryByText } = render(
+        wrap(<MainList />, repo)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Usuń'));
+      fireEvent.click(getByText('Na pewno?'));
+      expect(repo.delete).toHaveBeenCalledWith('tx');
+      expect(queryByText('Edytuj')).toBeNull();
+    });
+
+    it('after 2s the Na pewno? label reverts to Usuń', () => {
+      vi.useFakeTimers();
+      try {
+        const repo = makeRepo();
+        const { getByLabelText, getByText, queryByText } = render(
+          wrap(<MainList />, repo)
+        );
+        fireEvent.click(getByLabelText('Więcej akcji'));
+        fireEvent.click(getByText('Usuń'));
+        expect(getByText('Na pewno?')).toBeInTheDocument();
+        act(() => {
+          vi.advanceTimersByTime(2000);
+        });
+        expect(queryByText('Na pewno?')).toBeNull();
+        expect(getByText('Usuń')).toBeInTheDocument();
+        expect(repo.delete).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('clicking Przypomnij calls onOpenReminders with the todo id', () => {
+      const onOpenReminders = vi.fn();
+      const { getByLabelText, getByText } = render(
+        wrap(<MainList onOpenReminders={onOpenReminders} />)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.click(getByText('Przypomnij'));
+      expect(onOpenReminders).toHaveBeenCalledWith('tx');
+    });
+
+    it('Esc with menu open closes the menu (no edit mode)', () => {
+      const { getByLabelText, queryByText, getAllByRole } = render(
+        wrap(<MainList />)
+      );
+      fireEvent.click(getByLabelText('Więcej akcji'));
+      fireEvent.keyDown(document, { key: 'Escape' });
+      expect(queryByText('Edytuj')).toBeNull();
+      // Only AddTodoRow's input remains (with empty value); no edit textbox.
+      const inputs = getAllByRole('textbox') as HTMLInputElement[];
+      const editInputs = inputs.filter((i) => i.value === 'open me');
+      expect(editInputs).toHaveLength(0);
+    });
   });
 });

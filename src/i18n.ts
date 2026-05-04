@@ -83,7 +83,8 @@ export const t = {
   save: 'Zapisz',
   cancel: 'Anuluj',
   delete: 'Usuń',
-  deleteConfirm: 'Potwierdź usunięcie',
+  deleteConfirm: 'Na pewno?',
+  remind: 'Przypomnij',
 
   // ReminderEditor
   reminderFiredLabel: 'wysłane',

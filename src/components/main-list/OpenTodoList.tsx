@@ -22,7 +22,10 @@ import TodoRow from './TodoRow';
 
 interface OpenTodoListProps {
   todos: Todo[];
-  onOpenOverflow: (todoId: string) => void;
+  onOpenOverflow: (todoId: string, anchorRect: DOMRect) => void;
+  editingId?: string | null;
+  onSaveEdit?: (id: string, title: string) => void;
+  onCancelEdit?: (id: string) => void;
 }
 
 // Pure helper kept top-level so unit tests can exercise the reorder
@@ -37,7 +40,13 @@ export const computeReorder = (
   return next;
 };
 
-export default function OpenTodoList({ todos, onOpenOverflow }: OpenTodoListProps) {
+export default function OpenTodoList({
+  todos,
+  onOpenOverflow,
+  editingId = null,
+  onSaveEdit,
+  onCancelEdit,
+}: OpenTodoListProps) {
   const repo = useRepo();
   const sensors = useSensors(
     // 250ms long-press anywhere on the row activates a drag, with a 5px
@@ -63,7 +72,14 @@ export default function OpenTodoList({ todos, onOpenOverflow }: OpenTodoListProp
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <ul className="divide-y divide-hairlineSoft">
           {todos.map((todo) => (
-            <SortableItem key={todo.id} todo={todo} onOpenOverflow={onOpenOverflow} />
+            <SortableItem
+              key={todo.id}
+              todo={todo}
+              onOpenOverflow={onOpenOverflow}
+              isEditing={editingId === todo.id}
+              onSaveEdit={onSaveEdit}
+              onCancelEdit={onCancelEdit}
+            />
           ))}
         </ul>
       </SortableContext>
@@ -73,10 +89,19 @@ export default function OpenTodoList({ todos, onOpenOverflow }: OpenTodoListProp
 
 interface SortableItemProps {
   todo: Todo;
-  onOpenOverflow: (id: string) => void;
+  onOpenOverflow: (id: string, anchorRect: DOMRect) => void;
+  isEditing?: boolean;
+  onSaveEdit?: (id: string, title: string) => void;
+  onCancelEdit?: (id: string) => void;
 }
 
-function SortableItem({ todo, onOpenOverflow }: SortableItemProps) {
+function SortableItem({
+  todo,
+  onOpenOverflow,
+  isEditing,
+  onSaveEdit,
+  onCancelEdit,
+}: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: todo.id });
   const style = {
@@ -92,7 +117,13 @@ function SortableItem({ todo, onOpenOverflow }: SortableItemProps) {
       {...listeners}
       className={isDragging ? 'bg-bgSheet shadow-[0_8px_24px_oklch(0_0_0/0.35)] scale-[1.02]' : ''}
     >
-      <TodoRow todo={todo} onOpenOverflow={onOpenOverflow} />
+      <TodoRow
+        todo={todo}
+        onOpenOverflow={onOpenOverflow}
+        isEditing={isEditing}
+        onSaveEdit={onSaveEdit}
+        onCancelEdit={onCancelEdit}
+      />
     </li>
   );
 }
