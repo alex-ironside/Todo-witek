@@ -90,10 +90,10 @@ describe('RemindersSheet', () => {
   // cross-browser pattern is to overlay the real input on top of the visual
   // button so the user's tap lands directly on the input — the OS then opens
   // its native picker via standard input activation (no JS API needed).
-  it('exposes the datetime-local input as the labeled "Dodaj termin" affordance', () => {
+  it('exposes the datetime-local input as the labeled "Wybierz termin" affordance', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
-    const input = screen.getByLabelText('Dodaj termin') as HTMLInputElement;
+    const input = screen.getByLabelText('Wybierz termin') as HTMLInputElement;
     expect(input.tagName).toBe('INPUT');
     expect(input.type).toBe('datetime-local');
     expect(input.tabIndex).not.toBe(-1);
@@ -113,18 +113,45 @@ describe('RemindersSheet', () => {
         'button,input,a,select,textarea,[tabindex]:not([tabindex="-1"])'
       )
     );
-    const input = screen.getByLabelText('Dodaj termin') as HTMLInputElement;
+    const input = screen.getByLabelText('Wybierz termin') as HTMLInputElement;
     const inputIndex = focusables.indexOf(input);
     expect(inputIndex).toBeGreaterThan(0);
     const first = focusables[0];
     expect(first.tagName).not.toBe('INPUT');
   });
 
-  it('changing the hidden input adds a reminder snapped to 15 min', () => {
+  // Datetime-local pickers fire `change` for every field the user adjusts
+  // (year, month, day, hour, minute) on many platforms. Committing on each
+  // change creates a reminder per field touched. Picking must stage a
+  // pending value; the user explicitly confirms it via "Dodaj termin".
+  it('changing the hidden input does NOT add a reminder yet (requires confirm)', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
     const input = screen.getByTestId('reminder-input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '2026-05-04T10:08' } });
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it('confirm button is disabled when no value has been picked', () => {
+    const repo = makeRepo();
+    render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
+    expect(screen.getByRole('button', { name: 'Dodaj termin' })).toBeDisabled();
+  });
+
+  it('confirm button enables once a value is picked', () => {
+    const repo = makeRepo();
+    render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
+    const input = screen.getByTestId('reminder-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2026-05-04T10:08' } });
+    expect(screen.getByRole('button', { name: 'Dodaj termin' })).toBeEnabled();
+  });
+
+  it('clicking confirm with a pending value adds the reminder snapped to 15 min', () => {
+    const repo = makeRepo();
+    render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
+    const input = screen.getByTestId('reminder-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2026-05-04T10:08' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Dodaj termin' }));
     const call = (repo.update as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(call[0]).toBe('t1');
     const reminders = call[1].reminders as Reminder[];
@@ -134,11 +161,28 @@ describe('RemindersSheet', () => {
     expect(reminders[0].fired).toBe(false);
   });
 
-  it('clears the input value after a successful add', () => {
+  it('successive picks before confirm only stage the last value', () => {
     const repo = makeRepo();
     render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
     const input = screen.getByTestId('reminder-input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '2026-05-04T10:08' } });
+    fireEvent.change(input, { target: { value: '2026-05-04T11:08' } });
+    fireEvent.change(input, { target: { value: '2026-05-04T12:08' } });
+    expect(repo.update).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Dodaj termin' }));
+    expect(repo.update).toHaveBeenCalledTimes(1);
+    const reminders = (repo.update as ReturnType<typeof vi.fn>).mock.calls[0][1]
+      .reminders as Reminder[];
+    expect(reminders).toHaveLength(1);
+    expect(new Date(reminders[0].remindAt).getHours()).toBe(12);
+  });
+
+  it('clears the input value after a successful confirm', () => {
+    const repo = makeRepo();
+    render(wrap(<RemindersSheet todo={todo()} onClose={() => {}} />, repo));
+    const input = screen.getByTestId('reminder-input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2026-05-04T10:08' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Dodaj termin' }));
     expect(input.value).toBe('');
   });
 

@@ -92,6 +92,7 @@ export const t = {
   reminderFiredLabel: 'wysłane',
   reminderRemove: (when: string) => `Usuń przypomnienie ${when}`,
   reminderAdd: 'Dodaj termin',
+  reminderPick: 'Wybierz termin',
 
   // Push
   pushEnable: 'Włącz powiadomienia push na wielu urządzeniach',
