@@ -22,7 +22,18 @@ const makeRepo = (overrides: Partial<TodoRepository> = {}): TodoRepository => ({
 function renderForm(repo: TodoRepository) {
   return render(
     <RepoProvider repo={repo}>
-      <TodoForm />
+      <TodoForm defaultCategory="prywatne" />
+    </RepoProvider>
+  );
+}
+
+function renderFormWithCategory(
+  repo: TodoRepository,
+  defaultCategory: 'prywatne' | 'sluzbowe'
+) {
+  return render(
+    <RepoProvider repo={repo}>
+      <TodoForm defaultCategory={defaultCategory} />
     </RepoProvider>
   );
 }
@@ -77,6 +88,7 @@ describe('TodoForm — submit with mocked repo', () => {
     expect(repo.create).toHaveBeenNthCalledWith(2, {
       title: 'Second task',
       reminders: [],
+      category: 'prywatne',
     });
   });
 
@@ -143,6 +155,64 @@ describe('TodoForm — submit with mocked repo', () => {
     expect(repo.create).toHaveBeenNthCalledWith(2, {
       title: 'Second task',
       reminders: [],
+      category: 'prywatne',
+    });
+  });
+});
+
+describe('TodoForm — category toggle', () => {
+  it('defaults the category toggle to the active tab', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    renderFormWithCategory(repo, 'sluzbowe');
+
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+    await user.type(input, 'Praca');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    expect(repo.create).toHaveBeenCalledWith({
+      title: 'Praca',
+      reminders: [],
+      category: 'sluzbowe',
+    });
+  });
+
+  it('lets the user override the category for a single add', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    renderFormWithCategory(repo, 'prywatne');
+
+    // Override to sluzbowe before submitting.
+    await user.click(screen.getByRole('radio', { name: t.tabSluzbowe }));
+
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+    await user.type(input, 'Override');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    expect(repo.create).toHaveBeenCalledWith({
+      title: 'Override',
+      reminders: [],
+      category: 'sluzbowe',
+    });
+  });
+
+  it('resets the toggle back to the active tab after submit', async () => {
+    const user = userEvent.setup();
+    const repo = makeRepo();
+    renderFormWithCategory(repo, 'prywatne');
+
+    await user.click(screen.getByRole('radio', { name: t.tabSluzbowe }));
+    const input = screen.getByPlaceholderText(t.todoPlaceholder);
+    await user.type(input, 'Once');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    await user.type(input, 'Twice');
+    await user.click(screen.getByRole('button', { name: t.todoAdd }));
+
+    expect(repo.create).toHaveBeenNthCalledWith(2, {
+      title: 'Twice',
+      reminders: [],
+      category: 'prywatne',
     });
   });
 });

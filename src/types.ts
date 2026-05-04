@@ -7,6 +7,11 @@ export interface Reminder {
   fired: boolean;
 }
 
+export type TodoCategory = 'prywatne' | 'sluzbowe';
+
+export const TODO_CATEGORIES: readonly TodoCategory[] = ['prywatne', 'sluzbowe'];
+export const DEFAULT_CATEGORY: TodoCategory = 'prywatne';
+
 export interface Todo {
   id: string;
   ownerId: string;
@@ -16,17 +21,24 @@ export interface Todo {
   // Lower position = appears earlier in the list. Optional for legacy
   // todos created before reordering existed.
   position?: number;
+  // Optional for legacy todos created before categories existed; treat
+  // missing values as DEFAULT_CATEGORY when filtering.
+  category?: TodoCategory;
   createdAt?: unknown;
   updatedAt?: unknown;
 }
 
-export type NewTodo = Pick<Todo, 'title'> & { reminders?: Reminder[] };
+export type NewTodo = Pick<Todo, 'title'> & {
+  reminders?: Reminder[];
+  category?: TodoCategory;
+};
 
 export type TodoUpdate = Partial<{
   title: string;
   done: boolean;
   reminders: Reminder[];
   position: number;
+  category: TodoCategory;
 }>;
 
 export type Unsubscribe = () => void;

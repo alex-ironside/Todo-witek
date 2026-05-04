@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { getDb } from './app';
 import type { Todo, NewTodo, TodoUpdate, Unsubscribe } from '../types';
+import { DEFAULT_CATEGORY } from '../types';
 
 const COL = 'todos';
 
@@ -27,13 +28,14 @@ const todoRef = (id: string) => doc(getDb(), COL, id);
 // rewrites positions to 0..n-1.
 export const createTodo = async (
   ownerId: string,
-  { title, reminders = [] }: NewTodo
+  { title, reminders = [], category = DEFAULT_CATEGORY }: NewTodo
 ): Promise<string> => {
   const ref = await addDoc(todosCol(), {
     ownerId,
     title,
     done: false,
     reminders,
+    category,
     position: -Date.now(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

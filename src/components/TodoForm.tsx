@@ -1,23 +1,44 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRepo } from '../hooks/RepoContext';
+import { TODO_CATEGORIES, type TodoCategory } from '../types';
 import { t } from '../i18n';
 
-export default function TodoForm() {
+interface Props {
+  defaultCategory: TodoCategory;
+}
+
+const labelFor = (cat: TodoCategory): string =>
+  cat === 'prywatne' ? t.tabPrywatne : t.tabSluzbowe;
+
+export default function TodoForm({ defaultCategory }: Props) {
   const repo = useRepo();
   const [title, setTitle] = useState('');
   const [keepInput, setKeepInput] = useState(false);
+  const [category, setCategory] = useState<TodoCategory>(defaultCategory);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset the per-add toggle to the active tab whenever the active tab
+  // changes — the next add should default to the tab the user is on.
+  useEffect(() => {
+    setCategory(defaultCategory);
+  }, [defaultCategory]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     const saved = title.trim();
+    const savedCategory = category;
     setError('');
     if (!keepInput) setTitle('');
+    setCategory(defaultCategory);
     inputRef.current?.focus();
     try {
-      await repo.create({ title: saved, reminders: [] });
+      await repo.create({
+        title: saved,
+        reminders: [],
+        category: savedCategory,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.todoSaveError);
       setTitle(saved);
@@ -35,6 +56,23 @@ export default function TodoForm() {
         />
         {t.keepInputToggle}
       </label>
+      <div className="row" role="radiogroup" aria-label={t.categoryGroupLabel}>
+        {TODO_CATEGORIES.map((cat) => {
+          const selected = cat === category;
+          return (
+            <button
+              key={cat}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              className={selected ? 'primary' : 'ghost'}
+              onClick={() => setCategory(cat)}
+            >
+              {labelFor(cat)}
+            </button>
+          );
+        })}
+      </div>
       <div className="row">
         <input
           ref={inputRef}

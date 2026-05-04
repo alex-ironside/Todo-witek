@@ -1,9 +1,10 @@
-import type {
-  Todo,
-  TodoRepository,
-  TodoUpdate,
-  NewTodo,
-  Unsubscribe,
+import {
+  DEFAULT_CATEGORY,
+  type Todo,
+  type TodoRepository,
+  type TodoUpdate,
+  type NewTodo,
+  type Unsubscribe,
 } from '../types';
 
 export const LOCAL_TODOS_KEY = 'todo-witek:todos';
@@ -52,7 +53,11 @@ const minPosition = (todos: Todo[]): number => {
 };
 
 export const createLocalTodoRepo = (): TodoRepository => ({
-  create: async ({ title, reminders = [] }: NewTodo): Promise<string> => {
+  create: async ({
+    title,
+    reminders = [],
+    category = DEFAULT_CATEGORY,
+  }: NewTodo): Promise<string> => {
     const id = newId();
     const now = Date.now();
     const existing = read();
@@ -62,6 +67,7 @@ export const createLocalTodoRepo = (): TodoRepository => ({
       title,
       done: false,
       reminders,
+      category,
       position: minPosition(existing) - 1,
       createdAt: now,
       updatedAt: now,

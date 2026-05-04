@@ -46,6 +46,11 @@ export const t = {
   notConfiguredEnd:
     ', a następnie odśwież stronę — albo przełącz na tryb Lokalny, aby używać aplikacji bez Firebase.',
 
+  // Tabs (categories)
+  tabPrywatne: 'Prywatne',
+  tabSluzbowe: 'Służbowe',
+  categoryGroupLabel: 'Kategoria',
+
   // TodoForm
   todoPlaceholder: 'Dodaj zadanie…',
   todoAdd: 'Dodaj',

@@ -20,12 +20,14 @@ import {
   showLocalNotification,
 } from './services/notificationService';
 import type { StorageMode } from './services/storageMode';
-import type { Todo, TodoRepository } from './types';
+import { DEFAULT_CATEGORY, type Todo, type TodoRepository } from './types';
 import Login from './components/Login';
 import TodoForm from './components/TodoForm';
 import TodoList from './components/TodoList';
+import CategoryTabs from './components/CategoryTabs';
 import StorageModeToggle from './components/StorageModeToggle';
 import InstallButton from './components/InstallButton';
+import { useSelectedCategory } from './hooks/useSelectedCategory';
 import { t } from './i18n';
 
 export default function App() {
@@ -166,7 +168,14 @@ function Shell({
   pushBanner,
 }: ShellProps) {
   const { todos, loading, error } = useTodos(repo);
+  const [selectedCategory, setSelectedCategory] = useSelectedCategory();
   useReminderScheduler(todos, repo);
+
+  // Legacy todos created before categories existed default to DEFAULT_CATEGORY
+  // for filtering, so they remain visible on the default tab.
+  const visibleTodos = todos.filter(
+    (todo) => (todo.category ?? DEFAULT_CATEGORY) === selectedCategory
+  );
 
   return (
     <div className="app">
@@ -190,8 +199,9 @@ function Shell({
       ) : error ? (
         <div className="banner warn">{t.todosLoadError}</div>
       ) : null}
-      <TodoForm />
-      <TodoList todos={todos} loading={loading} />
+      <CategoryTabs value={selectedCategory} onChange={setSelectedCategory} />
+      <TodoForm defaultCategory={selectedCategory} />
+      <TodoList todos={visibleTodos} loading={loading} />
       {children}
     </div>
   );
