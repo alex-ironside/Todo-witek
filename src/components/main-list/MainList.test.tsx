@@ -70,11 +70,12 @@ describe('MainList', () => {
     expect(getByText('Wykonane (1)')).toBeInTheDocument();
   });
 
-  it('hamburger fires onOpenDrawer', () => {
-    const spy = vi.fn();
-    const { getByLabelText } = render(wrap(<MainList onOpenDrawer={spy} />));
+  it('hamburger opens the drawer (state owned by MainList)', () => {
+    const { getByLabelText, container } = render(wrap(<MainList />));
+    const aside = container.querySelector('aside');
+    expect(aside?.getAttribute('aria-hidden')).toBe('true');
     fireEvent.click(getByLabelText('Otwórz menu'));
-    expect(spy).toHaveBeenCalled();
+    expect(aside?.getAttribute('aria-hidden')).toBe('false');
   });
 
   it('cog fires onOpenSettings', () => {
@@ -106,5 +107,47 @@ describe('MainList', () => {
     const { getByText, queryByText } = render(wrap(<MainList />));
     expect(getByText('priv')).toBeInTheDocument();
     expect(queryByText('serv')).toBeNull();
+  });
+
+  it('clicking hamburger opens the drawer', () => {
+    const { getByLabelText, container } = render(wrap(<MainList />));
+    const aside = container.querySelector('aside');
+    expect(aside?.getAttribute('aria-hidden')).toBe('true');
+    fireEvent.click(getByLabelText('Otwórz menu'));
+    expect(aside?.getAttribute('aria-hidden')).toBe('false');
+  });
+
+  it('clicking a drawer category row sets the category and closes the drawer', () => {
+    mockTodos = [todo({ id: 's1', title: 'serv', category: 'sluzbowe' })];
+    const { getByLabelText, container, getAllByText } = render(
+      wrap(<MainList />)
+    );
+    fireEvent.click(getByLabelText('Otwórz menu'));
+    const aside = container.querySelector('aside');
+    expect(aside?.getAttribute('aria-hidden')).toBe('false');
+    // Two "Służbowe" exist (tab + drawer row); click the drawer one (last).
+    const matches = getAllByText('Służbowe');
+    fireEvent.click(matches[matches.length - 1]);
+    expect(mockSetCategory).toHaveBeenCalledWith('sluzbowe');
+    expect(aside?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('drawer rows show open-todo counts per category', () => {
+    mockTodos = [
+      todo({ id: 'p1', title: 'a', category: 'prywatne' }),
+      todo({ id: 'p2', title: 'b', category: 'prywatne' }),
+      todo({ id: 'p3', title: 'c', category: 'prywatne', done: true }),
+      todo({ id: 's1', title: 'd', category: 'sluzbowe' }),
+    ];
+    const { getByLabelText, container } = render(wrap(<MainList />));
+    fireEvent.click(getByLabelText('Otwórz menu'));
+    const aside = container.querySelector('aside');
+    expect(aside?.textContent).toContain('Prywatne');
+    // Only open todos count: 2 prywatne, 1 sluzbowe
+    const rows = aside?.querySelectorAll('[aria-current], button');
+    // Easier: check count siblings
+    expect(aside?.textContent).toMatch(/Prywatne[\s\S]*2/);
+    expect(aside?.textContent).toMatch(/Służbowe[\s\S]*1/);
+    expect(rows && rows.length).toBeGreaterThan(0);
   });
 });

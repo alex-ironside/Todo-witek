@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { t } from '../../i18n';
 
 interface AppBarProps {
@@ -7,11 +8,16 @@ interface AppBarProps {
 
 // Top app bar: hamburger | brand | cog. Hairline divider below. Buttons
 // have 44pt hit targets and emit prop callbacks; navigation logic lives
-// in MainList's parents (Phases 5 + 8).
-export default function AppBar({ onOpenDrawer, onOpenSettings }: AppBarProps) {
+// in MainList's parents (Phases 5 + 8). The hamburger button ref is
+// forwarded so the Drawer can return focus to it on close.
+const AppBar = forwardRef<HTMLButtonElement, AppBarProps>(function AppBar(
+  { onOpenDrawer, onOpenSettings },
+  hamburgerRef,
+) {
   return (
     <header className="h-14 flex items-center justify-between px-2 border-b border-hairlineSoft bg-bg">
       <button
+        ref={hamburgerRef}
         type="button"
         aria-label={t.menuOpen}
         onClick={onOpenDrawer}
@@ -37,4 +43,6 @@ export default function AppBar({ onOpenDrawer, onOpenSettings }: AppBarProps) {
       </button>
     </header>
   );
-}
+});
+
+export default AppBar;

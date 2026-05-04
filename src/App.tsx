@@ -169,7 +169,7 @@ function Shell({
 
   return (
     <div className="app">
-      <MainList />
+      <MainList identity={identity} />
       {/* Temporary footer strip — Phase 8 absorbs these into Settings. */}
       <div className="header">
         <div className="row">

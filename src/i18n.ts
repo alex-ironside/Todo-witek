@@ -8,6 +8,11 @@ export const t = {
   menuOpen: 'Otwórz menu',
   settingsOpen: 'Otwórz ustawienia',
 
+  // Drawer
+  categories: 'Kategorie',
+  settings: 'Ustawienia',
+  drawerClose: 'Zamknij menu',
+
   // Header / shell
   signOut: 'Wyloguj',
   loading: 'Ładowanie…',
