@@ -62,10 +62,8 @@ export const t = {
   emptyHint: 'Dodaj pierwsze powyżej.',
   done: 'Wykonane',
   todoSaveError: 'Nie udało się zapisać',
-  keepInputToggle: 'Zachowaj tekst po dodaniu',
 
   // TodoList
-  todosEmpty: 'Brak zadań. Dodaj jedno powyżej.',
   todosLoadError: 'Nie udało się załadować zadań. Odśwież stronę lub spróbuj ponownie później.',
   firestoreNotEnabled:
     'Firestore nie jest włączony — włącz go na console.firebase.google.com',

@@ -85,8 +85,7 @@ vi.mock('./services/reminderScheduler', () => ({
 }));
 
 vi.mock('./components/Login', () => ({ default: () => null }));
-vi.mock('./components/TodoForm', () => ({ default: () => null }));
-vi.mock('./components/TodoList', () => ({ default: () => null }));
+vi.mock('./components/main-list/MainList', () => ({ default: () => null }));
 vi.mock('./components/StorageModeToggle', () => ({ default: () => null }));
 vi.mock('./components/InstallButton', () => ({ default: () => null }));
 

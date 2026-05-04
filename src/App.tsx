@@ -20,14 +20,11 @@ import {
   showLocalNotification,
 } from './services/notificationService';
 import type { StorageMode } from './services/storageMode';
-import { DEFAULT_CATEGORY, type Todo, type TodoRepository } from './types';
+import type { Todo, TodoRepository } from './types';
 import Login from './components/Login';
-import TodoForm from './components/TodoForm';
-import TodoList from './components/TodoList';
-import CategoryTabs from './components/CategoryTabs';
+import MainList from './components/main-list/MainList';
 import StorageModeToggle from './components/StorageModeToggle';
 import InstallButton from './components/InstallButton';
-import { useSelectedCategory } from './hooks/useSelectedCategory';
 import { t } from './i18n';
 
 export default function App() {
@@ -167,20 +164,14 @@ function Shell({
   children,
   pushBanner,
 }: ShellProps) {
-  const { todos, loading, error } = useTodos(repo);
-  const [selectedCategory, setSelectedCategory] = useSelectedCategory();
+  const { todos, error } = useTodos(repo);
   useReminderScheduler(todos, repo);
-
-  // Legacy todos created before categories existed default to DEFAULT_CATEGORY
-  // for filtering, so they remain visible on the default tab.
-  const visibleTodos = todos.filter(
-    (todo) => (todo.category ?? DEFAULT_CATEGORY) === selectedCategory
-  );
 
   return (
     <div className="app">
+      <MainList />
+      {/* Temporary footer strip — Phase 8 absorbs these into Settings. */}
       <div className="header">
-        <div className="brand">{t.brand}</div>
         <div className="row">
           <InstallButton />
           <StorageModeToggle mode={mode} onChange={onModeChange} />
@@ -199,9 +190,6 @@ function Shell({
       ) : error ? (
         <div className="banner warn">{t.todosLoadError}</div>
       ) : null}
-      <CategoryTabs value={selectedCategory} onChange={setSelectedCategory} />
-      <TodoForm defaultCategory={selectedCategory} />
-      <TodoList todos={visibleTodos} loading={loading} />
       {children}
     </div>
   );
