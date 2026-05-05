@@ -4,6 +4,7 @@ import { useTodos } from '../../hooks/useTodos';
 import { useSelectedCategory } from '../../hooks/useSelectedCategory';
 import { useAccent } from '../../hooks/useAccent';
 import { useStorageMode } from '../../hooks/useStorageMode';
+import { useLocalTodoTransfer } from '../../hooks/useLocalTodoTransfer';
 import { DEFAULT_CATEGORY, type TodoCategory } from '../../types';
 import { t } from '../../i18n';
 import AppBar from './AppBar';
@@ -52,6 +53,7 @@ export default function MainList({
   const [category, setCategory] = useSelectedCategory();
   const [accent, setAccent] = useAccent();
   const [mode, setMode] = useStorageMode();
+  const transfer = useLocalTodoTransfer(repo);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -218,6 +220,18 @@ export default function MainList({
         onAccentChange={setAccent}
         mode={mode}
         onModeChange={setMode}
+        transfer={
+          mode === 'firebase'
+            ? {
+                localCount: transfer.localCount,
+                busy: transfer.busy,
+                message: transfer.message,
+                onTransfer: () => {
+                  void transfer.onTransfer();
+                },
+              }
+            : null
+        }
         push={push}
         canInstall={canInstall}
         onInstall={onInstall}

@@ -22,6 +22,7 @@ const baseProps = {
   onAccentChange: () => {},
   mode: 'local' as const,
   onModeChange: () => {},
+  transfer: null,
   push: null as PushState | null,
   canInstall: false,
   onInstall: () => {},
@@ -69,6 +70,26 @@ describe('SettingsSheet', () => {
     const { getByText } = render(<SettingsSheet {...baseProps} />);
     expect(getByText('Wygląd')).toBeInTheDocument();
     expect(getByText('Przechowywanie')).toBeInTheDocument();
+  });
+
+  it('TransferGroup hidden when transfer prop is null', () => {
+    const { queryByText } = render(<SettingsSheet {...baseProps} />);
+    expect(queryByText('Przenieś z urządzenia')).toBeNull();
+  });
+
+  it('TransferGroup visible when transfer prop has localCount > 0', () => {
+    const { getByText } = render(
+      <SettingsSheet
+        {...baseProps}
+        transfer={{
+          localCount: 2,
+          busy: false,
+          message: null,
+          onTransfer: () => {},
+        }}
+      />
+    );
+    expect(getByText('Przenieś z urządzenia')).toBeInTheDocument();
   });
 
   it('InstallGroup hidden when canInstall=false, visible when true', () => {

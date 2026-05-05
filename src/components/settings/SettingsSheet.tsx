@@ -6,8 +6,16 @@ import Sheet from '../main-list/Sheet';
 import AccountGroup from './AccountGroup';
 import AppearanceGroup from './AppearanceGroup';
 import StorageGroup from './StorageGroup';
+import TransferGroup from './TransferGroup';
 import PushGroup from './PushGroup';
 import InstallGroup from './InstallGroup';
+
+export interface TransferState {
+  localCount: number;
+  busy: boolean;
+  message: string | null;
+  onTransfer: () => void;
+}
 
 interface SettingsSheetProps {
   open: boolean;
@@ -18,6 +26,7 @@ interface SettingsSheetProps {
   onAccentChange: (key: AccentKey) => void;
   mode: StorageMode;
   onModeChange: (mode: StorageMode) => void;
+  transfer: TransferState | null;
   push: PushState | null;
   canInstall: boolean;
   onInstall: () => void;
@@ -32,6 +41,14 @@ export default function SettingsSheet(props: SettingsSheetProps) {
         <AccountGroup email={props.email} onSignOut={props.onSignOut} />
         <AppearanceGroup accent={props.accent} onChange={props.onAccentChange} />
         <StorageGroup mode={props.mode} onChange={props.onModeChange} />
+        {props.transfer && (
+          <TransferGroup
+            localCount={props.transfer.localCount}
+            busy={props.transfer.busy}
+            message={props.transfer.message}
+            onTransfer={props.transfer.onTransfer}
+          />
+        )}
         <PushGroup push={props.push} />
         <InstallGroup canInstall={props.canInstall} onInstall={props.onInstall} />
       </div>
