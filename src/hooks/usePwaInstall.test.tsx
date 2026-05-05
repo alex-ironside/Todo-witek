@@ -76,6 +76,34 @@ describe('usePwaInstall', () => {
     });
     expect(result.current.canInstall).toBe(false);
   });
+
+  // Chrome on Android can dispatch `beforeinstallprompt` before our React
+  // hook mounts. We rely on a top-level listener (in main.tsx) that stashes
+  // the event on `window.__deferredInstallPrompt`; the hook must pick it up.
+  it('picks up an event already stashed on window before mount', async () => {
+    const stashed: FakeEvent = {
+      preventDefault: vi.fn(),
+      prompt: vi.fn().mockResolvedValue(undefined),
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    };
+    const e = new Event('beforeinstallprompt') as Event & FakeEvent;
+    Object.assign(e, stashed);
+    (window as unknown as {
+      __deferredInstallPrompt: Event | null;
+    }).__deferredInstallPrompt = e;
+
+    const { result } = renderHook(() => usePwaInstall());
+    expect(result.current.canInstall).toBe(true);
+
+    await act(async () => {
+      await result.current.promptInstall();
+    });
+    expect(stashed.prompt).toHaveBeenCalled();
+
+    (window as unknown as {
+      __deferredInstallPrompt: Event | null;
+    }).__deferredInstallPrompt = null;
+  });
 });
 
 describe('usePwaInstall on iOS', () => {

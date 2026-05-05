@@ -2,9 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 
 // Browser-defined event for PWA install prompt. Not in TS lib.dom yet,
 // so we declare the minimal shape we need.
-interface BeforeInstallPromptEvent extends Event {
+export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+declare global {
+  interface Window {
+    // Set by a top-level listener in main.tsx so we don't miss the event
+    // if Chrome dispatches it before the React hook mounts (common on
+    // Android, where the prompt fires after the engagement heuristic).
+    __deferredInstallPrompt?: BeforeInstallPromptEvent | null;
+  }
 }
 
 export interface PwaInstallState {
@@ -37,7 +46,10 @@ const detectStandalone = (): boolean => {
 };
 
 export const usePwaInstall = (): PwaInstallState => {
-  const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(
+    () =>
+      (typeof window !== 'undefined' && window.__deferredInstallPrompt) || null
+  );
   const [installed, setInstalled] = useState(() => detectStandalone());
   const [isIos] = useState(() => detectIos());
 
@@ -49,6 +61,7 @@ export const usePwaInstall = (): PwaInstallState => {
     const onInstalled = () => {
       setInstalled(true);
       setEvent(null);
+      window.__deferredInstallPrompt = null;
     };
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     window.addEventListener('appinstalled', onInstalled);
@@ -62,8 +75,13 @@ export const usePwaInstall = (): PwaInstallState => {
     if (!event) return;
     await event.prompt();
     const choice = await event.userChoice;
+    // Either outcome consumes the prompt — Chrome won't re-fire it for the
+    // same page load, so drop it either way to avoid a stale handle.
+    window.__deferredInstallPrompt = null;
     if (choice.outcome === 'accepted') {
       setInstalled(true);
+      setEvent(null);
+    } else {
       setEvent(null);
     }
   }, [event]);
