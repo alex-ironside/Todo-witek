@@ -26,6 +26,7 @@ import type { Todo, TodoRepository } from './types';
 import AuthRouter from './components/auth/AuthRouter';
 import MainList from './components/main-list/MainList';
 import UpdatePrompt from './components/UpdatePrompt';
+import LoadingCheck from './components/LoadingCheck';
 import { t } from './i18n';
 
 export default function App() {
@@ -105,7 +106,7 @@ function FirebaseApp({ mode, onModeChange }: ModeProps) {
   const online = useOnlineStatus();
 
   if (loading) {
-    return <div className="app"><p className="muted">{t.loading}</p></div>;
+    return <LoadingCheck />;
   }
   if (!user) {
     return <AuthRouter onUseLocal={() => onModeChange('local')} />;
