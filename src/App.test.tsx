@@ -123,6 +123,19 @@ describe('App regression tests', () => {
     expect(mockRequestNotificationPermission).not.toHaveBeenCalled();
   });
 
+  it('shows the animated check splash while auth is still resolving', async () => {
+    // observeAuth never calls back synchronously here, so useAuth stays in
+    // loading=true and FirebaseApp must render the splash instead of plain text.
+    mockObserveAuth.mockImplementation(() => () => {});
+    const App = await importApp();
+    const { getByRole, queryByText } = render(<App />);
+    const status = getByRole('status');
+    expect(status).toHaveAccessibleName(/Ładowanie/);
+    expect(status.querySelector('path[d="M16 34l10 10 22-22"]')).toBeTruthy();
+    // Old plain-text loading line should be gone.
+    expect(queryByText('Ładowanie…')).toBeNull();
+  });
+
   describe('Shell error banner', () => {
     it('shows firestoreNotEnabled banner on permission-denied error', async () => {
       const permErr = Object.assign(new Error('perm'), { code: 'permission-denied' });
