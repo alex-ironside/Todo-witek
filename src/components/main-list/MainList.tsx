@@ -17,6 +17,7 @@ import DoneSection from './DoneSection';
 import EmptyState from './EmptyState';
 import Drawer from './Drawer';
 import ManageCategoriesSheet from './ManageCategoriesSheet';
+import MoveCategorySheet from './MoveCategorySheet';
 import PopoverMenu, { type PopoverMenuItem } from './PopoverMenu';
 import RemindersSheet from './RemindersSheet';
 import SettingsSheet from '../settings/SettingsSheet';
@@ -79,6 +80,7 @@ export default function MainList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [remindersForId, setRemindersForId] = useState<string | null>(null);
+  const [moveForId, setMoveForId] = useState<string | null>(null);
   const confirmTimerRef = useRef<number | null>(null);
 
   useEffect(
@@ -103,9 +105,26 @@ export default function MainList({
     setCategory(fallback);
   }, [categories, category, setCategory]);
 
-  const inCat = todos.filter(
-    (t) => (t.category ?? DEFAULT_CATEGORY) === category
+  // Map a todo's stored category id to one that actually exists in the
+  // user's category list. Legacy todos created before user-managed
+  // categories existed reference 'prywatne' / 'sluzbowe' literals, and a
+  // failed Firestore seed (e.g. shared-doc-id collision before we moved
+  // to auto-ids) can also leave todos pointing at categories that were
+  // never created. In both cases, surface those todos under the first
+  // available category instead of letting them vanish.
+  const knownCategoryIds = useMemo(
+    () => new Set(categories.map((c) => c.id)),
+    [categories]
   );
+  const fallbackCategoryId =
+    categories.find((c) => c.id === DEFAULT_CATEGORY)?.id ??
+    categories[0]?.id;
+  const effectiveCategory = (todoCategory: string | undefined): string => {
+    if (todoCategory && knownCategoryIds.has(todoCategory)) return todoCategory;
+    return fallbackCategoryId ?? DEFAULT_CATEGORY;
+  };
+
+  const inCat = todos.filter((t) => effectiveCategory(t.category) === category);
   const openTodos = inCat.filter((t) => !t.done);
   const doneTodos = inCat.filter((t) => t.done);
 
@@ -114,10 +133,13 @@ export default function MainList({
     for (const cat of categories) c[cat.id] = 0;
     for (const t of todos) {
       if (t.done) continue;
-      const cat = t.category ?? DEFAULT_CATEGORY;
+      const cat = effectiveCategory(t.category);
       c[cat] = (c[cat] ?? 0) + 1;
     }
     return c;
+    // effectiveCategory is derived from categories; depending on it
+    // directly avoids stale closures while keeping the count stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todos, categories]);
 
   const closeMenu = () => {
@@ -146,10 +168,25 @@ export default function MainList({
     closeMenu();
   };
 
+  const handleMove = () => {
+    if (menuForId) setMoveForId(menuForId);
+    closeMenu();
+  };
+
+  const handleMoveSelect = async (
+    todoId: string,
+    categoryId: string
+  ): Promise<void> => {
+    await repo.update(todoId, { category: categoryId });
+  };
+
   const remindersForTodo =
     remindersForId !== null
       ? todos.find((td) => td.id === remindersForId) ?? null
       : null;
+
+  const moveForTodo =
+    moveForId !== null ? todos.find((td) => td.id === moveForId) ?? null : null;
 
   const handleDelete = () => {
     if (!menuForId) return;
@@ -179,6 +216,7 @@ export default function MainList({
   const items: PopoverMenuItem[] = menuForId
     ? [
         { label: t.edit, onClick: handleEdit },
+        { label: t.move, onClick: handleMove },
         { label: t.remind, onClick: handleReminders },
         {
           label: confirmingDeleteId === menuForId ? t.deleteConfirm : t.delete,
@@ -276,6 +314,12 @@ export default function MainList({
       <RemindersSheet
         todo={remindersForTodo}
         onClose={() => setRemindersForId(null)}
+      />
+      <MoveCategorySheet
+        todo={moveForTodo}
+        categories={categories}
+        onClose={() => setMoveForId(null)}
+        onMove={handleMoveSelect}
       />
       <ManageCategoriesSheet
         open={manageOpen}

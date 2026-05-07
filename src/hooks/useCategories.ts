@@ -46,14 +46,22 @@ export const useCategories = (
           // fire before the listener was registered and React state would
           // stay empty even though the seeds landed in storage.
           queueMicrotask(() => {
+            // Clear the in-flight flag once seeding settles so a later
+            // empty observation (e.g. categories deleted on another
+            // device) triggers a fresh seed rather than leaving the user
+            // permanently without categories.
             void Promise.all(
               SEED_CATEGORIES.map((seed) =>
                 repo.create({ id: seed.id, name: seed.name })
               )
-            ).catch((e) => {
-              seedingRef.current = false;
-              console.error('[categories] seed failed', e);
-            });
+            )
+              .then(() => {
+                seedingRef.current = false;
+              })
+              .catch((e) => {
+                seedingRef.current = false;
+                console.error('[categories] seed failed', e);
+              });
           });
         }
       },

@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const collection = vi.fn();
 const doc = vi.fn();
 const addDoc = vi.fn();
-const setDoc = vi.fn();
 const updateDoc = vi.fn();
 const deleteDoc = vi.fn();
 const onSnapshot = vi.fn();
@@ -25,7 +24,6 @@ vi.mock('firebase/firestore', () => ({
   collection,
   doc,
   addDoc,
-  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
@@ -72,19 +70,18 @@ describe('categories repository', () => {
     expect(id).toBe('gen-id');
   });
 
-  it('createCategory setDoc with merge when id provided (seeding)', async () => {
-    setDoc.mockResolvedValue(undefined);
+  it('createCategory ignores the id hint and always addDoc on Firestore', async () => {
+    addDoc.mockResolvedValue({ id: 'auto-id' });
     const { createCategory } = await importCategories();
     const id = await createCategory('user-1', {
       id: 'prywatne',
       name: 'Prywatne',
     });
-    expect(setDoc).toHaveBeenCalledWith(
-      { __doc: 'categories/prywatne' },
+    expect(addDoc).toHaveBeenCalledWith(
+      { __col: 'categories' },
       expect.objectContaining({ ownerId: 'user-1', name: 'Prywatne' }),
-      { merge: true }
     );
-    expect(id).toBe('prywatne');
+    expect(id).toBe('auto-id');
   });
 
   it('updateCategory merges fields and refreshes updatedAt', async () => {

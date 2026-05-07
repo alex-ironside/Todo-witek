@@ -88,6 +88,30 @@ describe('useCategories', () => {
     expect(createSpy).not.toHaveBeenCalled();
   });
 
+  it('re-seeds when categories drop back to empty after the first seed', async () => {
+    const { repo, emit, createSpy } = makeRepo([]);
+    renderHook(() => useCategories(repo));
+    // Wait for the initial seed to land.
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledTimes(2);
+    });
+    createSpy.mockClear();
+    // Simulate categories being deleted (e.g. on another device).
+    act(() => {
+      emit([]);
+    });
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith({
+        id: 'prywatne',
+        name: 'Prywatne',
+      });
+      expect(createSpy).toHaveBeenCalledWith({
+        id: 'sluzbowe',
+        name: 'Służbowe',
+      });
+    });
+  });
+
   it('passes errors through', async () => {
     const { repo, emitError } = makeRepo([]);
     const { result } = renderHook(() => useCategories(repo));

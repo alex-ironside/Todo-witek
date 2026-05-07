@@ -187,6 +187,20 @@ describe('MainList', () => {
     expect(queryByText('serv')).toBeNull();
   });
 
+  it('shows todos whose category id no longer exists under the first category', () => {
+    // Simulates legacy todos whose `category` string does not match any
+    // current category — they should not vanish; they appear under the
+    // first available category.
+    mockCategories = [
+      { id: 'auto-1', ownerId: 'u', name: 'Prywatne' },
+      { id: 'auto-2', ownerId: 'u', name: 'Służbowe' },
+    ];
+    mockCategory = 'auto-1';
+    mockTodos = [todo({ id: 'l', title: 'legacy', category: 'prywatne' })];
+    const { getByText } = render(wrap(<MainList />));
+    expect(getByText('legacy')).toBeInTheDocument();
+  });
+
   it('clicking a drawer category row sets the category and closes the drawer', () => {
     mockTodos = [todo({ id: 's1', title: 'serv', category: 'sluzbowe' })];
     const { getByLabelText, container, getAllByText } = render(
@@ -291,10 +305,11 @@ describe('MainList', () => {
       mockTodos = [todo({ id: 'tx', title: 'open me' })];
     });
 
-    it('clicking ••• opens a menu containing Edytuj, Przypomnij, Usuń', () => {
+    it('clicking ••• opens a menu containing Edytuj, Przenieś, Przypomnij, Usuń', () => {
       const { getByLabelText, getByText } = render(wrap(<MainList />));
       fireEvent.click(getByLabelText('Więcej akcji'));
       expect(getByText('Edytuj')).toBeInTheDocument();
+      expect(getByText('Przenieś')).toBeInTheDocument();
       expect(getByText('Przypomnij')).toBeInTheDocument();
       expect(getByText('Usuń')).toBeInTheDocument();
     });
@@ -415,6 +430,50 @@ describe('MainList', () => {
       fireEvent.click(cancelBtns[0]);
       const dialog = getAllByRole('dialog')[0];
       expect(dialog.className).toContain('translate-y-full');
+    });
+
+    describe('move between categories', () => {
+      it('clicking Przenieś opens the move sheet listing every category', () => {
+        const { getByLabelText, getByText, getAllByRole } = render(
+          wrap(<MainList />)
+        );
+        fireEvent.click(getByLabelText('Więcej akcji'));
+        fireEvent.click(getByText('Przenieś'));
+        const dialog = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Przenieś do kategorii'
+        );
+        expect(dialog).toBeDefined();
+        expect(dialog?.className).toContain('translate-y-0');
+        // both seeded categories are options
+        expect(dialog?.textContent).toContain('Prywatne');
+        expect(dialog?.textContent).toContain('Służbowe');
+      });
+
+      it('selecting a category in the move sheet calls repo.update with that category', async () => {
+        const repo = makeRepo();
+        const { getByLabelText, getByText, getAllByRole } = render(
+          wrap(<MainList />, repo)
+        );
+        fireEvent.click(getByLabelText('Więcej akcji'));
+        fireEvent.click(getByText('Przenieś'));
+        const dialog = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Przenieś do kategorii'
+        )!;
+        const target = Array.from(
+          dialog.querySelectorAll('button')
+        ).find((b) => b.textContent?.includes('Służbowe'))!;
+        fireEvent.click(target);
+        await act(async () => {
+          await Promise.resolve();
+        });
+        expect(repo.update).toHaveBeenCalledWith('tx', {
+          category: 'sluzbowe',
+        });
+        const after = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Przenieś do kategorii'
+        );
+        expect(after?.className).toContain('translate-y-full');
+      });
     });
 
     it('Esc with menu open closes the menu (no edit mode)', () => {
