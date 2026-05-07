@@ -12,6 +12,7 @@ export const t = {
   categories: 'Kategorie',
   settings: 'Ustawienia',
   drawerClose: 'Zamknij menu',
+  manageCategories: 'Zarządzaj kategoriami',
 
   // Header / shell
   signOut: 'Wyloguj',
@@ -64,10 +65,21 @@ export const t = {
   notConfiguredEnd:
     ', a następnie odśwież stronę — albo przełącz na tryb Lokalny, aby używać aplikacji bez Firebase.',
 
-  // Tabs (categories)
+  // Tabs (categories) — labels for the legacy seed categories. Newly
+  // created categories use whatever name the user typed.
   tabPrywatne: 'Prywatne',
   tabSluzbowe: 'Służbowe',
   categoryGroupLabel: 'Kategoria',
+
+  // Manage categories sheet
+  manageCategoriesTitle: 'Zarządzaj kategoriami',
+  manageCategoriesEmpty: 'Brak kategorii.',
+  categoryNamePlaceholder: 'Nazwa kategorii',
+  categoryAdd: 'Dodaj kategorię',
+  categoryRename: (name: string) => `Zmień nazwę „${name}"`,
+  categoryDelete: (name: string) => `Usuń kategorię „${name}"`,
+  categoryDeleteLast: 'Musi pozostać co najmniej jedna kategoria.',
+  categoryDuplicateName: 'Kategoria o takiej nazwie już istnieje.',
 
   // TodoForm / AddTodoRow
   todoPlaceholder: 'Co dziś robisz?',

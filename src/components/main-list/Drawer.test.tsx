@@ -1,14 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import Drawer from './Drawer';
+import type { Category } from '../../types';
+
+const seedCategories: Category[] = [
+  { id: 'prywatne', ownerId: 'u', name: 'Prywatne' },
+  { id: 'sluzbowe', ownerId: 'u', name: 'Służbowe' },
+];
 
 const baseProps = {
   identity: 'me@example.com',
-  selectedCategory: 'prywatne' as const,
+  selectedCategory: 'prywatne',
   counts: { prywatne: 3, sluzbowe: 1 },
+  categories: seedCategories,
   onSelectCategory: vi.fn(),
   onClose: vi.fn(),
   onOpenSettings: vi.fn(),
+  onManageCategories: vi.fn(),
 };
 
 beforeEach(() => {
@@ -34,6 +42,27 @@ describe('Drawer', () => {
     const { getByText } = render(<Drawer open {...baseProps} />);
     expect(getByText('Kategorie')).toBeInTheDocument();
     expect(getByText('Ustawienia')).toBeInTheDocument();
+  });
+
+  it('renders the manage categories entry above the category list', () => {
+    const { getByText } = render(<Drawer open {...baseProps} />);
+    expect(getByText('Zarządzaj kategoriami')).toBeInTheDocument();
+  });
+
+  it('renders user-defined categories alongside seed categories', () => {
+    const { getByText } = render(
+      <Drawer
+        open
+        {...baseProps}
+        categories={[
+          ...seedCategories,
+          { id: 'hobby', ownerId: 'u', name: 'Hobby' },
+        ]}
+        counts={{ prywatne: 0, sluzbowe: 0, hobby: 5 }}
+      />
+    );
+    expect(getByText('Hobby')).toBeInTheDocument();
+    expect(getByText('5')).toBeInTheDocument();
   });
 
   it('when closed: panel has -translate-x-full and aria-hidden', () => {
@@ -87,6 +116,22 @@ describe('Drawer', () => {
     );
     fireEvent.click(getByText('Służbowe'));
     expect(onSelect).toHaveBeenCalledWith('sluzbowe');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('clicking Zarządzaj kategoriami fires onManageCategories and onClose', () => {
+    const onManage = vi.fn();
+    const onClose = vi.fn();
+    const { getByText } = render(
+      <Drawer
+        open
+        {...baseProps}
+        onManageCategories={onManage}
+        onClose={onClose}
+      />
+    );
+    fireEvent.click(getByText('Zarządzaj kategoriami'));
+    expect(onManage).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { t } from '../../i18n';
-import type { TodoCategory } from '../../types';
+import type { Category, TodoCategory } from '../../types';
 import CategoryDrawerRow from './CategoryDrawerRow';
 import { useSwipeClose } from '../../hooks/useSwipeClose';
 
@@ -11,6 +11,8 @@ interface DrawerProps {
   selectedCategory: TodoCategory;
   onSelectCategory: (cat: TodoCategory) => void;
   counts: Record<TodoCategory, number>;
+  categories: Category[];
+  onManageCategories?: () => void;
   onOpenSettings?: () => void;
   returnFocusRef?: RefObject<HTMLElement | null>;
 }
@@ -29,6 +31,8 @@ export default function Drawer({
   selectedCategory,
   onSelectCategory,
   counts,
+  categories,
+  onManageCategories = noop,
   onOpenSettings = noop,
   returnFocusRef,
 }: DrawerProps) {
@@ -61,6 +65,11 @@ export default function Drawer({
 
   const handleSelect = (cat: TodoCategory) => {
     onSelectCategory(cat);
+    onClose();
+  };
+
+  const handleManage = () => {
+    onManageCategories();
     onClose();
   };
 
@@ -104,23 +113,41 @@ export default function Drawer({
             <div className="text-textDim text-sm mt-1 truncate">{identity}</div>
           )}
         </header>
+        <button
+          ref={firstRowRef}
+          type="button"
+          onClick={handleManage}
+          className="w-full flex items-center gap-3 px-4 min-h-[44px] text-left text-text border-b border-hairlineSoft"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+          <span className="text-base font-medium">{t.manageCategories}</span>
+        </button>
         <div className="px-4 pt-4 pb-2 text-textMute text-xs uppercase tracking-wide font-semibold">
           {t.categories}
         </div>
-        <nav className="flex flex-col">
-          <CategoryDrawerRow
-            ref={firstRowRef}
-            label={t.tabPrywatne}
-            count={counts.prywatne}
-            active={selectedCategory === 'prywatne'}
-            onSelect={() => handleSelect('prywatne')}
-          />
-          <CategoryDrawerRow
-            label={t.tabSluzbowe}
-            count={counts.sluzbowe}
-            active={selectedCategory === 'sluzbowe'}
-            onSelect={() => handleSelect('sluzbowe')}
-          />
+        <nav className="flex flex-col overflow-y-auto">
+          {categories.map((cat) => (
+            <CategoryDrawerRow
+              key={cat.id}
+              label={cat.name}
+              count={counts[cat.id] ?? 0}
+              active={selectedCategory === cat.id}
+              onSelect={() => handleSelect(cat.id)}
+            />
+          ))}
         </nav>
         <div className="mt-auto border-t border-hairlineSoft">
           <button

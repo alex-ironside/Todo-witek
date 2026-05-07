@@ -11,6 +11,8 @@ import { logout } from './firebase/auth';
 import { isConfigured } from './firebase/config';
 import { createLocalTodoRepo } from './repos/localTodoRepo';
 import { createFirebaseTodoRepo } from './repos/firebaseTodoRepo';
+import { createLocalCategoryRepo } from './repos/localCategoryRepo';
+import { createFirebaseCategoryRepo } from './repos/firebaseCategoryRepo';
 import {
   createReminderScheduler,
   type ReminderScheduler,
@@ -77,6 +79,7 @@ function FirebaseNotConfigured({ mode, onModeChange }: ModeProps) {
 
 function LocalApp({ mode, onModeChange }: ModeProps) {
   const repo = useMemo(() => createLocalTodoRepo(), []);
+  const categoryRepo = useMemo(() => createLocalCategoryRepo(), []);
   const online = useOnlineStatus();
 
   useEffect(() => {
@@ -84,7 +87,7 @@ function LocalApp({ mode, onModeChange }: ModeProps) {
   }, []);
 
   return (
-    <RepoProvider repo={repo}>
+    <RepoProvider repo={repo} categoryRepo={categoryRepo}>
       <Shell
         mode={mode}
         onModeChange={onModeChange}
@@ -129,6 +132,10 @@ function FirebaseAuthenticated({
   onModeChange,
 }: FirebaseAuthenticatedProps) {
   const repo = useMemo(() => createFirebaseTodoRepo(user.uid), [user.uid]);
+  const categoryRepo = useMemo(
+    () => createFirebaseCategoryRepo(user.uid),
+    [user.uid]
+  );
   const push = usePushNotifications(user.uid);
   const signOut = async () => {
     await push.disable();
@@ -136,7 +143,7 @@ function FirebaseAuthenticated({
   };
 
   return (
-    <RepoProvider repo={repo}>
+    <RepoProvider repo={repo} categoryRepo={categoryRepo}>
       <Shell
         mode={mode}
         onModeChange={onModeChange}

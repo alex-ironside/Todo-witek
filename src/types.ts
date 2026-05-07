@@ -7,10 +7,21 @@ export interface Reminder {
   fired: boolean;
 }
 
-export type TodoCategory = 'prywatne' | 'sluzbowe';
+// A todo's category is identified by the id of a Category document the
+// user owns. String-typed because users can create their own categories.
+export type TodoCategory = string;
 
-export const TODO_CATEGORIES: readonly TodoCategory[] = ['prywatne', 'sluzbowe'];
+// Default seed category id. Existing todos created before category
+// management was introduced reference this id.
 export const DEFAULT_CATEGORY: TodoCategory = 'prywatne';
+
+// Built-in seed categories created the first time a user opens the app.
+// IDs are deterministic so legacy todos saved with category='prywatne'
+// or 'sluzbowe' continue to point to a real category.
+export const SEED_CATEGORIES: readonly { id: string; name: string }[] = [
+  { id: 'prywatne', name: 'Prywatne' },
+  { id: 'sluzbowe', name: 'Służbowe' },
+];
 
 export interface Todo {
   id: string;
@@ -53,6 +64,39 @@ export interface TodoRepository {
   reorder: (orderedIds: string[]) => Promise<void>;
   observe: (
     callback: (todos: Todo[]) => void,
+    onError?: (err: Error) => void
+  ) => Unsubscribe;
+}
+
+// User-managed category. Owned by the user; rename and delete go
+// through the same wrapper as todos so backend swap is one line.
+export interface Category {
+  id: string;
+  ownerId: string;
+  name: string;
+  position?: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+// id is optional so we can seed deterministic ids for the built-in
+// categories without a separate API; user-driven creation never sets id.
+export interface NewCategory {
+  name: string;
+  id?: string;
+}
+
+export type CategoryUpdate = Partial<{
+  name: string;
+  position: number;
+}>;
+
+export interface CategoryRepository {
+  create: (input: NewCategory) => Promise<string>;
+  update: (id: string, fields: CategoryUpdate) => Promise<void>;
+  delete: (id: string) => Promise<void>;
+  observe: (
+    callback: (categories: Category[]) => void,
     onError?: (err: Error) => void
   ) => Unsubscribe;
 }

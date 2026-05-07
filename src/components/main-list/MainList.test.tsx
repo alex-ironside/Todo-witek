@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
 import { RepoProvider } from '../../hooks/RepoContext';
-import type { Todo, TodoRepository } from '../../types';
+import type {
+  Category,
+  CategoryRepository,
+  Todo,
+  TodoCategory,
+  TodoRepository,
+} from '../../types';
 
 // Selected category mock — shared spy state
-let mockCategory: 'prywatne' | 'sluzbowe' = 'prywatne';
-const mockSetCategory = vi.fn((next: 'prywatne' | 'sluzbowe') => {
+let mockCategory: TodoCategory = 'prywatne';
+const mockSetCategory = vi.fn((next: TodoCategory) => {
   mockCategory = next;
 });
 vi.mock('../../hooks/useSelectedCategory', () => ({
@@ -15,6 +21,18 @@ vi.mock('../../hooks/useSelectedCategory', () => ({
 let mockTodos: Todo[] = [];
 vi.mock('../../hooks/useTodos', () => ({
   useTodos: () => ({ todos: mockTodos, loading: false, error: null }),
+}));
+
+let mockCategories: Category[] = [
+  { id: 'prywatne', ownerId: 'u', name: 'Prywatne' },
+  { id: 'sluzbowe', ownerId: 'u', name: 'Służbowe' },
+];
+vi.mock('../../hooks/useCategories', () => ({
+  useCategories: () => ({
+    categories: mockCategories,
+    loading: false,
+    error: null,
+  }),
 }));
 
 vi.mock('../../hooks/useAccent', () => ({
@@ -38,6 +56,15 @@ function makeRepo(): TodoRepository {
   };
 }
 
+function makeCategoryRepo(): CategoryRepository {
+  return {
+    create: vi.fn().mockResolvedValue('cat-id'),
+    update: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined),
+    observe: vi.fn(() => () => {}),
+  };
+}
+
 const todo = (over: Partial<Todo> = {}): Todo => ({
   id: 't1',
   ownerId: 'u',
@@ -48,14 +75,24 @@ const todo = (over: Partial<Todo> = {}): Todo => ({
   ...over,
 });
 
-const wrap = (ui: React.ReactNode, repo: TodoRepository = makeRepo()) => (
-  <RepoProvider repo={repo}>{ui}</RepoProvider>
+const wrap = (
+  ui: React.ReactNode,
+  repo: TodoRepository = makeRepo(),
+  categoryRepo: CategoryRepository = makeCategoryRepo()
+) => (
+  <RepoProvider repo={repo} categoryRepo={categoryRepo}>
+    {ui}
+  </RepoProvider>
 );
 
 describe('MainList', () => {
   beforeEach(() => {
     mockCategory = 'prywatne';
     mockTodos = [];
+    mockCategories = [
+      { id: 'prywatne', ownerId: 'u', name: 'Prywatne' },
+      { id: 'sluzbowe', ownerId: 'u', name: 'Służbowe' },
+    ];
     mockSetCategory.mockClear();
   });
 
@@ -95,7 +132,6 @@ describe('MainList', () => {
 
   it('cog opens the SettingsSheet (titled Ustawienia)', () => {
     const { getByLabelText, getAllByRole } = render(wrap(<MainList />));
-    // Settings sheet exists but starts closed.
     const sheetBefore = getAllByRole('dialog').find(
       (d) => d.getAttribute('aria-label') === 'Ustawienia'
     );
@@ -112,7 +148,6 @@ describe('MainList', () => {
     fireEvent.click(getByLabelText('Otwórz ustawienia'));
     expect(queryByText('Zalogowany jako')).toBeNull();
     expect(queryByText('Powiadomienia push')).toBeNull();
-    // Always-on groups visible.
     expect(queryByText('Wygląd')).not.toBeNull();
     expect(queryByText('Przechowywanie')).not.toBeNull();
   });
@@ -162,6 +197,76 @@ describe('MainList', () => {
     expect(aside?.textContent).toMatch(/Służbowe[\s\S]*1/);
   });
 
+  describe('manage categories', () => {
+    it('drawer exposes a Zarządzaj kategoriami entry that opens the manage sheet', () => {
+      const { getByLabelText, getByRole, getAllByRole } = render(
+        wrap(<MainList />)
+      );
+      fireEvent.click(getByLabelText('Otwórz menu'));
+      fireEvent.click(getByRole('button', { name: 'Zarządzaj kategoriami' }));
+      const dialog = getAllByRole('dialog').find(
+        (d) => d.getAttribute('aria-label') === 'Zarządzaj kategoriami'
+      );
+      expect(dialog).toBeDefined();
+      expect(dialog?.className).toContain('translate-y-0');
+    });
+
+    it('creating a category in the sheet calls categoryRepo.create', () => {
+      const categoryRepo = makeCategoryRepo();
+      const { getByLabelText, getByRole, getByText, getByPlaceholderText } =
+        render(wrap(<MainList />, makeRepo(), categoryRepo));
+      fireEvent.click(getByLabelText('Otwórz menu'));
+      fireEvent.click(getByRole('button', { name: 'Zarządzaj kategoriami' }));
+      fireEvent.change(getByPlaceholderText('Nazwa kategorii'), {
+        target: { value: 'Hobby' },
+      });
+      fireEvent.click(getByText('Dodaj kategorię'));
+      expect(categoryRepo.create).toHaveBeenCalledWith({ name: 'Hobby' });
+    });
+
+    it('renaming a category in the sheet calls categoryRepo.update', () => {
+      const categoryRepo = makeCategoryRepo();
+      const { getByLabelText, getByRole, getAllByText, container } = render(
+        wrap(<MainList />, makeRepo(), categoryRepo)
+      );
+      fireEvent.click(getByLabelText('Otwórz menu'));
+      fireEvent.click(getByRole('button', { name: 'Zarządzaj kategoriami' }));
+      fireEvent.click(getAllByText('Edytuj')[0]);
+      const input = container.querySelector(
+        'input[aria-label^="Zmień nazwę"]'
+      ) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'Osobiste' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(categoryRepo.update).toHaveBeenCalledWith('prywatne', {
+        name: 'Osobiste',
+      });
+    });
+
+    it('deleting a category reassigns matching todos to the fallback then deletes it', async () => {
+      mockTodos = [
+        todo({ id: 'a', title: 'one', category: 'sluzbowe' }),
+        todo({ id: 'b', title: 'two', category: 'sluzbowe' }),
+      ];
+      const repo = makeRepo();
+      const categoryRepo = makeCategoryRepo();
+      const { getByLabelText, getByRole, getByText, getAllByText } = render(
+        wrap(<MainList />, repo, categoryRepo)
+      );
+      fireEvent.click(getByLabelText('Otwórz menu'));
+      fireEvent.click(getByRole('button', { name: 'Zarządzaj kategoriami' }));
+      const usun = getAllByText('Usuń');
+      fireEvent.click(usun[usun.length - 1]); // Służbowe row
+      fireEvent.click(getByText('Na pewno?'));
+      // wait microtask for the async handler
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(repo.update).toHaveBeenCalledWith('a', { category: 'prywatne' });
+      expect(repo.update).toHaveBeenCalledWith('b', { category: 'prywatne' });
+      expect(categoryRepo.delete).toHaveBeenCalledWith('sluzbowe');
+    });
+  });
+
   describe('overflow menu, edit, and delete', () => {
     beforeEach(() => {
       mockTodos = [todo({ id: 'tx', title: 'open me' })];
@@ -205,7 +310,6 @@ describe('MainList', () => {
       fireEvent.change(input, { target: { value: 'nowy tytuł' } });
       fireEvent.keyDown(input, { key: 'Enter' });
       expect(repo.update).toHaveBeenCalledWith('tx', { title: 'nowy tytuł' });
-      // edit input no longer present
       expect(findEditInput(getAllByRole)).toBeNull();
     });
 
@@ -231,7 +335,6 @@ describe('MainList', () => {
       fireEvent.click(getByText('Usuń'));
       expect(repo.delete).not.toHaveBeenCalled();
       expect(getByText('Na pewno?')).toBeInTheDocument();
-      // menu still open
       expect(queryByText('Edytuj')).toBeInTheDocument();
     });
 
@@ -272,15 +375,12 @@ describe('MainList', () => {
       const { getByLabelText, getByText, getAllByRole } = render(
         wrap(<MainList />)
       );
-      // Before opening, the sheet exists but is closed (translate-y-full).
       const dialogBefore = getAllByRole('dialog')[0];
       expect(dialogBefore.className).toContain('translate-y-full');
       fireEvent.click(getByLabelText('Więcej akcji'));
       fireEvent.click(getByText('Przypomnij'));
-      // Sheet now open: dialog uses translate-y-0; subtitle references the todo title.
       const dialog = getAllByRole('dialog')[0];
       expect(dialog.className).toContain('translate-y-0');
-      // Subtitle inside the sheet references the todo title.
       expect(dialog.textContent).toContain('open me');
     });
 
@@ -305,7 +405,6 @@ describe('MainList', () => {
       fireEvent.click(getByLabelText('Więcej akcji'));
       fireEvent.keyDown(document, { key: 'Escape' });
       expect(queryByText('Edytuj')).toBeNull();
-      // Only AddTodoRow's input remains (with empty value); no edit textbox.
       const inputs = getAllByRole('textbox') as HTMLInputElement[];
       const editInputs = inputs.filter((i) => i.value === 'open me');
       expect(editInputs).toHaveLength(0);
