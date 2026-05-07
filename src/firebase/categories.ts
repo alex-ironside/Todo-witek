@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   addDoc,
-  setDoc,
   updateDoc,
   deleteDoc,
   onSnapshot,
@@ -25,13 +24,16 @@ const COL = 'categories';
 const categoriesCol = () => collection(getDb(), COL);
 const categoryRef = (id: string) => doc(getDb(), COL, id);
 
-// When `id` is provided we use setDoc with merge — that path is for
-// seeding the built-in categories with deterministic ids, so legacy
-// todos referencing 'prywatne'/'sluzbowe' keep their category mapping.
-// Otherwise addDoc generates an id, just like todos.
+// We always let Firestore generate the doc id with addDoc. The `id`
+// hint in NewCategory is honored only by the local repo (where storage
+// is per-device, so deterministic seed ids are safe). On Firestore the
+// `categories` collection is shared across users, so a deterministic
+// seed id like 'prywatne' would collide between users — only the first
+// to claim it could ever own that doc, and subsequent users would silently
+// fail under the rules. Auto-ids per user sidestep that entirely.
 export const createCategory = async (
   ownerId: string,
-  { name, id }: NewCategory
+  { name }: NewCategory
 ): Promise<string> => {
   const payload = {
     ownerId,
@@ -40,10 +42,6 @@ export const createCategory = async (
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
-  if (id) {
-    await setDoc(categoryRef(id), payload, { merge: true });
-    return id;
-  }
   const ref = await addDoc(categoriesCol(), payload);
   return ref.id;
 };

@@ -106,6 +106,11 @@ export const t = {
   delete: 'Usuń',
   deleteConfirm: 'Na pewno?',
   remind: 'Przypomnij',
+  move: 'Przenieś',
+
+  // Move-to-category sheet
+  moveToCategoryTitle: 'Przenieś do kategorii',
+  moveToCategoryHere: 'Tutaj',
 
   // Reminders sheet
   reminderSheetTitle: 'Przypomnienia',
