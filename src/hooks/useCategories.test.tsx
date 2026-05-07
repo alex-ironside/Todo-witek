@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCategories } from './useCategories';
+import {
+  createLocalCategoryRepo,
+  LOCAL_CATEGORIES_KEY,
+} from '../repos/localCategoryRepo';
 import type { Category, CategoryRepository } from '../types';
 
 function makeRepo(initial: Category[] = []): {
@@ -100,5 +104,49 @@ describe('useCategories', () => {
     const { result } = renderHook(() => useCategories(null));
     expect(result.current.categories).toEqual([]);
     expect(result.current.loading).toBe(false);
+  });
+
+  describe('against the real local repo', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it('shows the seeded prywatne and sluzbowe in state on first run', async () => {
+      const repo = createLocalCategoryRepo();
+      const { result } = renderHook(() => useCategories(repo));
+      await waitFor(() => {
+        expect(result.current.categories.map((c) => c.id).sort()).toEqual([
+          'prywatne',
+          'sluzbowe',
+        ]);
+      });
+    });
+
+    it('keeps the seeded categories when the user adds a new one', async () => {
+      const repo = createLocalCategoryRepo();
+      const { result } = renderHook(() => useCategories(repo));
+      await waitFor(() => {
+        expect(result.current.categories.map((c) => c.id).sort()).toEqual([
+          'prywatne',
+          'sluzbowe',
+        ]);
+      });
+      await act(async () => {
+        await repo.create({ name: 'Hobby' });
+      });
+      await waitFor(() => {
+        expect(result.current.categories.map((c) => c.name).sort()).toEqual([
+          'Hobby',
+          'Prywatne',
+          'Służbowe',
+        ]);
+      });
+      const stored = JSON.parse(
+        localStorage.getItem(LOCAL_CATEGORIES_KEY) || '[]'
+      ) as Category[];
+      expect(stored.map((c) => c.id).sort()).toEqual(
+        expect.arrayContaining(['prywatne', 'sluzbowe'])
+      );
+    });
   });
 });

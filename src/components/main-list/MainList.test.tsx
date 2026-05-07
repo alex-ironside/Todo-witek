@@ -123,6 +123,25 @@ describe('MainList', () => {
     expect(aside?.getAttribute('aria-hidden')).toBe('false');
   });
 
+  it('left-edge swipe opens the drawer', () => {
+    const { container } = render(wrap(<MainList />));
+    const aside = container.querySelector('aside');
+    expect(aside?.getAttribute('aria-hidden')).toBe('true');
+    const dispatch = (type: string, clientX: number, timeStamp: number) => {
+      const ev = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(ev, 'clientX', { value: clientX });
+      Object.defineProperty(ev, 'pointerId', { value: 1 });
+      Object.defineProperty(ev, 'timeStamp', { value: timeStamp });
+      document.dispatchEvent(ev);
+    };
+    act(() => {
+      dispatch('pointerdown', 5, 0);
+      dispatch('pointermove', 90, 100);
+      dispatch('pointerup', 90, 200);
+    });
+    expect(aside?.getAttribute('aria-hidden')).toBe('false');
+  });
+
   it('cog fires onOpenSettings', () => {
     const spy = vi.fn();
     const { getByLabelText } = render(wrap(<MainList onOpenSettings={spy} />));

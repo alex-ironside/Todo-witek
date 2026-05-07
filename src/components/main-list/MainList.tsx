@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCategoryRepo, useRepo } from '../../hooks/RepoContext';
 import { useTodos } from '../../hooks/useTodos';
 import { useCategories } from '../../hooks/useCategories';
@@ -6,6 +6,7 @@ import { useSelectedCategory } from '../../hooks/useSelectedCategory';
 import { useAccent } from '../../hooks/useAccent';
 import { useStorageMode } from '../../hooks/useStorageMode';
 import { useLocalTodoTransfer } from '../../hooks/useLocalTodoTransfer';
+import { useEdgeSwipeOpen } from '../../hooks/useEdgeSwipeOpen';
 import { DEFAULT_CATEGORY, type TodoCategory } from '../../types';
 import { t } from '../../i18n';
 import AppBar from './AppBar';
@@ -62,6 +63,11 @@ export default function MainList({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
+
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  // Disable while any modal surface is open so close-gestures don't bounce
+  // the drawer back open through the same swipe.
+  useEdgeSwipeOpen(openDrawer, !drawerOpen && !settingsOpen && !manageOpen);
 
   const openSettings = () => {
     setSettingsOpen(true);
