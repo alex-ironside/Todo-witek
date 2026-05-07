@@ -124,6 +124,26 @@ functions/              ← optional Cloud Function for cross-device push
 - For pure logic, no mocks — call the function directly.
 - Use `vi.useFakeTimers()` for anything time-dependent.
 
+### Coverage — 100% on new code, integration-first
+- **Every new line of code must be covered by tests.** No untested
+  branches, no untested error paths, no "I'll add tests later." If you
+  can't test it, the design is wrong — refactor until you can.
+- **Prefer integration tests over unit tests.** Exercise the real seams
+  between modules (component + hook + wrapper) rather than mocking each
+  layer in isolation. A test that renders a component, drives it with
+  user events, and asserts the resulting Firestore wrapper call is worth
+  more than three isolated unit tests.
+- Reach for unit tests only for pure logic in `src/utils` and
+  `src/services`, or when an integration test cannot reach the branch
+  (e.g. an SDK error path). Don't unit-test what an integration test
+  already covers.
+- New PRs must not lower overall coverage. Run `npm test -- --coverage`
+  before committing; investigate any uncovered line in changed files
+  and either cover it or delete it.
+- Bug fixes start with a failing **integration** test that reproduces
+  the bug end-to-end. Unit-level regression tests are a fallback, not
+  the default.
+
 ## Don'ts
 
 - Don't add `.js`/`.jsx` files. Don't add a second build tool.
