@@ -23,6 +23,25 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // User-managed categories. Same per-user ownership rules as todos.
+    match /categories/{categoryId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner() {
+        return isSignedIn() && resource.data.ownerId == request.auth.uid;
+      }
+      function isCreatingOwn() {
+        return isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      }
+
+      allow read: if isOwner();
+      allow create: if isCreatingOwn();
+      allow update: if isOwner()
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner();
+    }
+
     // FCM device tokens — one doc per token, scoped by user.
     match /fcmTokens/{tokenId} {
       allow read, delete: if request.auth != null

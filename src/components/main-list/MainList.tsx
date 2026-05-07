@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRepo } from '../../hooks/RepoContext';
+import { useCategoryRepo, useRepo } from '../../hooks/RepoContext';
 import { useTodos } from '../../hooks/useTodos';
+import { useCategories } from '../../hooks/useCategories';
 import { useSelectedCategory } from '../../hooks/useSelectedCategory';
 import { useAccent } from '../../hooks/useAccent';
 import { useStorageMode } from '../../hooks/useStorageMode';
@@ -14,6 +15,7 @@ import OpenTodoList from './OpenTodoList';
 import DoneSection from './DoneSection';
 import EmptyState from './EmptyState';
 import Drawer from './Drawer';
+import ManageCategoriesSheet from './ManageCategoriesSheet';
 import PopoverMenu, { type PopoverMenuItem } from './PopoverMenu';
 import RemindersSheet from './RemindersSheet';
 import SettingsSheet from '../settings/SettingsSheet';
@@ -49,13 +51,16 @@ export default function MainList({
   onInstall = noop,
 }: MainListProps) {
   const repo = useRepo();
+  const categoryRepo = useCategoryRepo();
   const { todos } = useTodos(repo);
+  const { categories } = useCategories(categoryRepo);
   const [category, setCategory] = useSelectedCategory();
   const [accent, setAccent] = useAccent();
   const [mode, setMode] = useStorageMode();
   const transfer = useLocalTodoTransfer(repo);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   const openSettings = () => {
@@ -80,6 +85,18 @@ export default function MainList({
     []
   );
 
+  // If the persisted selected category no longer exists (e.g. it was
+  // deleted on another device), fall back to the default seed or to the
+  // first available category.
+  useEffect(() => {
+    if (categories.length === 0) return;
+    if (categories.some((c) => c.id === category)) return;
+    const fallback =
+      categories.find((c) => c.id === DEFAULT_CATEGORY)?.id ??
+      categories[0].id;
+    setCategory(fallback);
+  }, [categories, category, setCategory]);
+
   const inCat = todos.filter(
     (t) => (t.category ?? DEFAULT_CATEGORY) === category
   );
@@ -87,14 +104,15 @@ export default function MainList({
   const doneTodos = inCat.filter((t) => t.done);
 
   const counts = useMemo(() => {
-    const c: Record<TodoCategory, number> = { prywatne: 0, sluzbowe: 0 };
+    const c: Record<TodoCategory, number> = {};
+    for (const cat of categories) c[cat.id] = 0;
     for (const t of todos) {
       if (t.done) continue;
       const cat = t.category ?? DEFAULT_CATEGORY;
-      c[cat]++;
+      c[cat] = (c[cat] ?? 0) + 1;
     }
     return c;
-  }, [todos]);
+  }, [todos, categories]);
 
   const closeMenu = () => {
     setMenuForId(null);
@@ -164,6 +182,40 @@ export default function MainList({
       ]
     : [];
 
+  const handleCreateCategory = async (name: string): Promise<void> => {
+    if (!categoryRepo) return;
+    await categoryRepo.create({ name });
+  };
+
+  const handleRenameCategory = async (
+    id: string,
+    name: string
+  ): Promise<void> => {
+    if (!categoryRepo) return;
+    await categoryRepo.update(id, { name });
+  };
+
+  const handleDeleteCategory = async (id: string): Promise<void> => {
+    if (!categoryRepo) return;
+    if (categories.length <= 1) return;
+    // Reassign todos that referenced the deleted category to a sensible
+    // fallback: the default seed if it survives, otherwise the first
+    // remaining category.
+    const remaining = categories.filter((c) => c.id !== id);
+    const fallback =
+      remaining.find((c) => c.id === DEFAULT_CATEGORY)?.id ?? remaining[0].id;
+    const orphaned = todos.filter(
+      (t) => (t.category ?? DEFAULT_CATEGORY) === id
+    );
+    await Promise.all(
+      orphaned.map((todo) => repo.update(todo.id, { category: fallback }))
+    );
+    await categoryRepo.delete(id);
+    if (category === id) {
+      setCategory(fallback);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg text-text font-sans">
       <AppBar
@@ -171,7 +223,11 @@ export default function MainList({
         onOpenDrawer={() => setDrawerOpen(true)}
         onOpenSettings={openSettings}
       />
-      <CategoryTabsBar value={category} onChange={setCategory} />
+      <CategoryTabsBar
+        value={category}
+        onChange={setCategory}
+        categories={categories}
+      />
       <AddTodoRow category={category} />
       {openTodos.length === 0 ? (
         <EmptyState />
@@ -198,6 +254,10 @@ export default function MainList({
         selectedCategory={category}
         onSelectCategory={setCategory}
         counts={counts}
+        categories={categories}
+        onManageCategories={
+          categoryRepo ? () => setManageOpen(true) : undefined
+        }
         onOpenSettings={openSettings}
         returnFocusRef={hamburgerRef}
       />
@@ -210,6 +270,14 @@ export default function MainList({
       <RemindersSheet
         todo={remindersForTodo}
         onClose={() => setRemindersForId(null)}
+      />
+      <ManageCategoriesSheet
+        open={manageOpen}
+        onClose={() => setManageOpen(false)}
+        categories={categories}
+        onCreate={handleCreateCategory}
+        onRename={handleRenameCategory}
+        onDelete={handleDeleteCategory}
       />
       <SettingsSheet
         open={settingsOpen}
