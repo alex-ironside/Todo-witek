@@ -39,13 +39,21 @@ export const useCategories = (
         setLoading(false);
         if (next.length === 0 && !seedingRef.current) {
           seedingRef.current = true;
-          void Promise.all(
-            SEED_CATEGORIES.map((seed) =>
-              repo.create({ id: seed.id, name: seed.name })
-            )
-          ).catch((e) => {
-            seedingRef.current = false;
-            console.error('[categories] seed failed', e);
+          // Defer the seed creates so they run AFTER repo.observe()
+          // finishes wiring up its change listener. The local repo
+          // dispatches its change event synchronously inside create();
+          // if we seeded inside this initial callback, those events would
+          // fire before the listener was registered and React state would
+          // stay empty even though the seeds landed in storage.
+          queueMicrotask(() => {
+            void Promise.all(
+              SEED_CATEGORIES.map((seed) =>
+                repo.create({ id: seed.id, name: seed.name })
+              )
+            ).catch((e) => {
+              seedingRef.current = false;
+              console.error('[categories] seed failed', e);
+            });
           });
         }
       },
