@@ -40,12 +40,16 @@ const sortByPosition = (cats: Category[]): Category[] =>
     return ca - cb;
   });
 
-const minPosition = (cats: Category[]): number => {
-  let min = 0;
+// New categories should appear at the END of the tab bar, after every
+// existing one — that's where users look for what they just added. Pick a
+// position strictly greater than every current position so the ascending
+// sort places the new category last.
+const nextPosition = (cats: Category[]): number => {
+  let max = -1;
   for (const c of cats) {
-    if (typeof c.position === 'number' && c.position < min) min = c.position;
+    if (typeof c.position === 'number' && c.position > max) max = c.position;
   }
-  return min;
+  return max + 1;
 };
 
 export const createLocalCategoryRepo = (): CategoryRepository => ({
@@ -58,7 +62,7 @@ export const createLocalCategoryRepo = (): CategoryRepository => ({
       id: finalId,
       ownerId: 'local',
       name,
-      position: minPosition(existing) - 1,
+      position: nextPosition(existing),
       createdAt: now,
       updatedAt: now,
     };

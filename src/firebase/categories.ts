@@ -38,7 +38,10 @@ export const createCategory = async (
   const payload = {
     ownerId,
     name,
-    position: -Date.now(),
+    // Positive, monotonically increasing so newly added categories
+    // sort AFTER existing ones in the ascending position order — the user
+    // expects what they just typed to appear at the end of the tab bar.
+    position: Date.now(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };

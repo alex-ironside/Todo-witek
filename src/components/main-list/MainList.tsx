@@ -55,7 +55,7 @@ export default function MainList({
   const repo = useRepo();
   const categoryRepo = useCategoryRepo();
   const { todos } = useTodos(repo);
-  const { categories } = useCategories(categoryRepo);
+  const { categories, error: categoriesError } = useCategories(categoryRepo);
   const [category, setCategory] = useSelectedCategory();
   const [accent, setAccent] = useAccent();
   const [mode, setMode] = useStorageMode();
@@ -260,6 +260,20 @@ export default function MainList({
     }
   };
 
+  // Promote the categories load error to a banner. Without this, a
+  // permission-denied on the /categories collection (e.g. firestore.rules
+  // hasn't been deployed) leaves the UI silently empty — no tabs, no
+  // explanation, and the manage sheet just says "Brak kategorii", so the
+  // user thinks "adding doesn't work" when in fact every read and write
+  // is being rejected by the rules.
+  const categoriesErrorBanner =
+    categoriesError &&
+    (categoriesError as { code?: string }).code === 'permission-denied'
+      ? t.categoriesPermissionDenied
+      : categoriesError
+        ? t.categoriesLoadError
+        : null;
+
   return (
     <div className="min-h-screen bg-bg text-text font-sans">
       <AppBar
@@ -267,6 +281,11 @@ export default function MainList({
         onOpenDrawer={() => setDrawerOpen(true)}
         onOpenSettings={openSettings}
       />
+      {categoriesErrorBanner && (
+        <div role="alert" className="banner warn px-4 py-2 bg-danger text-accentInk text-sm">
+          {categoriesErrorBanner}
+        </div>
+      )}
       <CategoryTabsBar
         value={category}
         onChange={setCategory}

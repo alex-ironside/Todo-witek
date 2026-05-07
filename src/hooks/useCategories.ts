@@ -45,23 +45,27 @@ export const useCategories = (
           // if we seeded inside this initial callback, those events would
           // fire before the listener was registered and React state would
           // stay empty even though the seeds landed in storage.
-          queueMicrotask(() => {
-            // Clear the in-flight flag once seeding settles so a later
-            // empty observation (e.g. categories deleted on another
-            // device) triggers a fresh seed rather than leaving the user
-            // permanently without categories.
-            void Promise.all(
-              SEED_CATEGORIES.map((seed) =>
-                repo.create({ id: seed.id, name: seed.name })
-              )
-            )
-              .then(() => {
-                seedingRef.current = false;
-              })
-              .catch((e) => {
-                seedingRef.current = false;
-                console.error('[categories] seed failed', e);
-              });
+          queueMicrotask(async () => {
+            // Seed sequentially: parallel creates can race on the
+            // position field — both Promise.all branches read the same
+            // "next position" before either has written, ending up with
+            // identical positions and an undefined-order tab bar.
+            // Awaiting each create ensures the second seed sees the
+            // first one's position and lands strictly after it.
+            //
+            // Clearing the in-flight flag once seeding settles lets a
+            // later empty observation (e.g. categories deleted on
+            // another device) trigger a fresh seed rather than leaving
+            // the user permanently without categories.
+            try {
+              for (const seed of SEED_CATEGORIES) {
+                await repo.create({ id: seed.id, name: seed.name });
+              }
+            } catch (e) {
+              console.error('[categories] seed failed', e);
+            } finally {
+              seedingRef.current = false;
+            }
           });
         }
       },

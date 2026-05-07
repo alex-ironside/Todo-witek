@@ -98,8 +98,26 @@ describe('localCategoryRepo', () => {
     const cb = vi.fn();
     const off = repo.observe(cb);
     const list = cb.mock.calls[0][0];
-    // newest gets the smallest (most negative) position, so it comes first
-    expect(list.map((c: { name: string }) => c.name)).toEqual(['B', 'A']);
+    // Categories appear in insertion order: a freshly added category
+    // shows up at the end of the tab bar (where users look for what
+    // they just typed), not at the start.
+    expect(list.map((c: { name: string }) => c.name)).toEqual(['A', 'B']);
+    off();
+  });
+
+  it('a third category appended after two existing ones lands at the end', async () => {
+    const repo = createLocalCategoryRepo();
+    await repo.create({ id: 'prywatne', name: 'Prywatne' });
+    await repo.create({ id: 'sluzbowe', name: 'Służbowe' });
+    await repo.create({ name: 'Hobby' });
+    const cb = vi.fn();
+    const off = repo.observe(cb);
+    const list = cb.mock.calls[0][0];
+    expect(list.map((c: { name: string }) => c.name)).toEqual([
+      'Prywatne',
+      'Służbowe',
+      'Hobby',
+    ]);
     off();
   });
 });
