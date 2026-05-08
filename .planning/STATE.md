@@ -54,8 +54,14 @@ Items acknowledged and deferred at v1.1 milestone close on 2026-05-04:
 | debug | data-is-not-synched | root_cause_found at v1.0 — Firestore API now enabled. Debug session resolved. |
 | setup | FIREBASE_SERVICE_ACCOUNT_KEY | GitHub secret carry-over from v1.0 — user must configure before cron fires in production |
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260508-gp8 | Add "Zarządzaj kategoriami" button to move-to-category view | 2026-05-08 | 4898d65 | [260508-gp8-add-manage-categories-button-to-move-to-](./quick/260508-gp8-add-manage-categories-button-to-move-to-/) |
+
 ## Last Session
 
-- Timestamp: 2026-05-04T15:30:00Z
-- Stopped at: v1.1 milestone shipped (audit + complete)
+- Timestamp: 2026-05-08
+- Stopped at: Quick task 260508-gp8 — Add manage categories button to move-to-category view
 - Resume file: None
