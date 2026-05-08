@@ -34,6 +34,29 @@ module boundary (see `src/firebase/todos.test.ts` for the pattern).
 Before any commit: `npm test`, `npm run typecheck`, `npm run build` must
 all pass.
 
+## End-to-end verification — Playwright MCP, always
+
+Before calling any task done — feature, bugfix, refactor that touches
+runtime behavior — exercise the change in a real browser via the
+Playwright MCP tools (`mcp__playwright__browser_*`). Passing tests and a
+green build are necessary but not sufficient: they verify code, not the
+running app.
+
+Minimum loop:
+1. Start the dev server (`npm run dev`) if it isn't already running.
+2. `browser_navigate` to the relevant page, sign in if needed, and drive
+   the feature with `browser_click` / `browser_type` / `browser_fill_form`.
+3. Assert the observable outcome with `browser_snapshot` or
+   `browser_evaluate`. Check `browser_console_messages` for unexpected
+   errors.
+4. Cover the golden path **and** at least one edge case affected by the
+   change. For bugfixes, reproduce the original failure first, then
+   confirm the fix.
+
+If the change is impossible to exercise in the browser (e.g. build
+config, CI), say so explicitly instead of claiming success. Never
+declare a task complete on the strength of unit tests alone.
+
 ## Design principles
 
 ### SOLID
