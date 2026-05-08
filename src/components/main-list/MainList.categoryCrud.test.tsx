@@ -168,7 +168,9 @@ describe('MainList × real category repo end-to-end', () => {
   it('deleting a category through the manage sheet removes the tab and reassigns its todos', async () => {
     // Pre-seed with a Służbowe-todo. The todo lives in the parent-mocked
     // useTodos state but the category repo is real; deleting Służbowe must
-    // call repo.update reassigning the todo to Prywatne.
+    // call repo.update moving the todo into the virtual "Bez kategorii"
+    // bucket (UNCATEGORIZED sentinel) so it stays visible until the user
+    // explicitly moves it into a real category.
     const todoRepo = makeRepo();
     mockTodos = [
       {
@@ -202,7 +204,7 @@ describe('MainList × real category repo end-to-end', () => {
       expect(queryByRole('tab', { name: 'Służbowe' })).toBeNull();
     });
     expect(todoRepo.update).toHaveBeenCalledWith('t1', {
-      category: 'prywatne',
+      category: '__uncategorized__',
     });
   });
 });

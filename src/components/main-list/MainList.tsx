@@ -7,7 +7,12 @@ import { useAccent } from '../../hooks/useAccent';
 import { useStorageMode } from '../../hooks/useStorageMode';
 import { useLocalTodoTransfer } from '../../hooks/useLocalTodoTransfer';
 import { useEdgeSwipeOpen } from '../../hooks/useEdgeSwipeOpen';
-import { DEFAULT_CATEGORY, type TodoCategory } from '../../types';
+import {
+  UNCATEGORIZED,
+  type Category,
+  type TodoCategory,
+} from '../../types';
+import { resolveTodoCategory } from '../../utils/resolveCategory';
 import { t } from '../../i18n';
 import AppBar from './AppBar';
 import CategoryTabsBar from './CategoryTabsBar';
@@ -93,54 +98,68 @@ export default function MainList({
     []
   );
 
-  // If the persisted selected category no longer exists (e.g. it was
-  // deleted on another device), fall back to the default seed or to the
-  // first available category.
-  useEffect(() => {
-    if (categories.length === 0) return;
-    if (categories.some((c) => c.id === category)) return;
-    const fallback =
-      categories.find((c) => c.id === DEFAULT_CATEGORY)?.id ??
-      categories[0].id;
-    setCategory(fallback);
-  }, [categories, category, setCategory]);
-
-  // Map a todo's stored category id to one that actually exists in the
-  // user's category list. Legacy todos created before user-managed
-  // categories existed reference 'prywatne' / 'sluzbowe' literals, and a
-  // failed Firestore seed (e.g. shared-doc-id collision before we moved
-  // to auto-ids) can also leave todos pointing at categories that were
-  // never created. In both cases, surface those todos under the first
-  // available category instead of letting them vanish.
-  const knownCategoryIds = useMemo(
-    () => new Set(categories.map((c) => c.id)),
-    [categories]
+  // Resolve every todo to a display category up front so filtering,
+  // counts, and the "is the uncategorized bucket non-empty?" check all
+  // share one source of truth.
+  const resolvedTodos = useMemo(
+    () =>
+      todos.map((td) => ({
+        todo: td,
+        resolved: resolveTodoCategory(td.category, categories),
+      })),
+    [todos, categories]
   );
-  const fallbackCategoryId =
-    categories.find((c) => c.id === DEFAULT_CATEGORY)?.id ??
-    categories[0]?.id;
-  const effectiveCategory = (todoCategory: string | undefined): string => {
-    if (todoCategory && knownCategoryIds.has(todoCategory)) return todoCategory;
-    return fallbackCategoryId ?? DEFAULT_CATEGORY;
-  };
 
-  const inCat = todos.filter((t) => effectiveCategory(t.category) === category);
-  const openTodos = inCat.filter((t) => !t.done);
-  const doneTodos = inCat.filter((t) => t.done);
+  const hasUncategorized = resolvedTodos.some(
+    ({ resolved, todo }) => resolved === UNCATEGORIZED && !todo.done
+  );
+
+  // The virtual "Bez kategorii" tab only appears when there's something
+  // in it, so users without legacy data don't see an empty extra tab.
+  const uncategorizedTab: Category = useMemo(
+    () => ({
+      id: UNCATEGORIZED,
+      ownerId: '__virtual__',
+      name: t.tabUncategorized,
+      position: Number.POSITIVE_INFINITY,
+    }),
+    []
+  );
+  const displayCategories: Category[] = useMemo(
+    () => (hasUncategorized ? [...categories, uncategorizedTab] : categories),
+    [categories, hasUncategorized, uncategorizedTab]
+  );
+
+  // If the persisted selected category no longer exists (e.g. it was
+  // deleted on another device, or it's a pre-78b25bd literal id like
+  // 'sluzbowe' that no longer matches any Firestore doc), resolve it
+  // against the user's real categories by name first; only then fall
+  // back to the first available tab.
+  useEffect(() => {
+    if (displayCategories.length === 0) return;
+    if (displayCategories.some((c) => c.id === category)) return;
+    const remapped = resolveTodoCategory(category, categories);
+    const next =
+      remapped !== UNCATEGORIZED && displayCategories.some((c) => c.id === remapped)
+        ? remapped
+        : displayCategories[0].id;
+    setCategory(next);
+  }, [displayCategories, categories, category, setCategory]);
+
+  const inCat = resolvedTodos.filter(({ resolved }) => resolved === category);
+  const openTodos = inCat.filter(({ todo }) => !todo.done).map((x) => x.todo);
+  const doneTodos = inCat.filter(({ todo }) => todo.done).map((x) => x.todo);
 
   const counts = useMemo(() => {
     const c: Record<TodoCategory, number> = {};
     for (const cat of categories) c[cat.id] = 0;
-    for (const t of todos) {
-      if (t.done) continue;
-      const cat = effectiveCategory(t.category);
-      c[cat] = (c[cat] ?? 0) + 1;
+    c[UNCATEGORIZED] = 0;
+    for (const { todo, resolved } of resolvedTodos) {
+      if (todo.done) continue;
+      c[resolved] = (c[resolved] ?? 0) + 1;
     }
     return c;
-    // effectiveCategory is derived from categories; depending on it
-    // directly avoids stale closures while keeping the count stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todos, categories]);
+  }, [resolvedTodos, categories]);
 
   const closeMenu = () => {
     setMenuForId(null);
@@ -242,21 +261,21 @@ export default function MainList({
   const handleDeleteCategory = async (id: string): Promise<void> => {
     if (!categoryRepo) return;
     if (categories.length <= 1) return;
-    // Reassign todos that referenced the deleted category to a sensible
-    // fallback: the default seed if it survives, otherwise the first
-    // remaining category.
-    const remaining = categories.filter((c) => c.id !== id);
-    const fallback =
-      remaining.find((c) => c.id === DEFAULT_CATEGORY)?.id ?? remaining[0].id;
-    const orphaned = todos.filter(
-      (t) => (t.category ?? DEFAULT_CATEGORY) === id
-    );
+    // Move affected todos to the virtual "Bez kategorii" bucket rather
+    // than silently reassigning them to another real category. The user
+    // explicitly picks a new category later via the move action, so
+    // their data is never quietly relabelled.
+    const orphaned = resolvedTodos
+      .filter(({ resolved }) => resolved === id)
+      .map((x) => x.todo);
     await Promise.all(
-      orphaned.map((todo) => repo.update(todo.id, { category: fallback }))
+      orphaned.map((todo) =>
+        repo.update(todo.id, { category: UNCATEGORIZED })
+      )
     );
     await categoryRepo.delete(id);
     if (category === id) {
-      setCategory(fallback);
+      setCategory(orphaned.length > 0 ? UNCATEGORIZED : categories[0].id);
     }
   };
 
@@ -289,7 +308,7 @@ export default function MainList({
       <CategoryTabsBar
         value={category}
         onChange={setCategory}
-        categories={categories}
+        categories={displayCategories}
       />
       <AddTodoRow category={category} />
       {openTodos.length === 0 ? (
@@ -317,7 +336,7 @@ export default function MainList({
         selectedCategory={category}
         onSelectCategory={setCategory}
         counts={counts}
-        categories={categories}
+        categories={displayCategories}
         onManageCategories={
           categoryRepo ? () => setManageOpen(true) : undefined
         }

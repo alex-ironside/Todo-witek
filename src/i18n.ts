@@ -69,6 +69,7 @@ export const t = {
   // created categories use whatever name the user typed.
   tabPrywatne: 'Prywatne',
   tabSluzbowe: 'Służbowe',
+  tabUncategorized: 'Bez kategorii',
   categoryGroupLabel: 'Kategoria',
 
   // Manage categories sheet

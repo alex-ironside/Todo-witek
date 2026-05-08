@@ -305,7 +305,7 @@ describe('MainList', () => {
       });
     });
 
-    it('deleting a category reassigns matching todos to the fallback then deletes it', async () => {
+    it('deleting a category moves matching todos to the "Bez kategorii" bucket then deletes the category', async () => {
       mockTodos = [
         todo({ id: 'a', title: 'one', category: 'sluzbowe' }),
         todo({ id: 'b', title: 'two', category: 'sluzbowe' }),
@@ -324,8 +324,16 @@ describe('MainList', () => {
       await act(async () => {
         await Promise.resolve();
       });
-      expect(repo.update).toHaveBeenCalledWith('a', { category: 'prywatne' });
-      expect(repo.update).toHaveBeenCalledWith('b', { category: 'prywatne' });
+      // Per the "categories should not be cleared until reassigned" rule,
+      // we move orphaned todos to the virtual "Bez kategorii" bucket
+      // (UNCATEGORIZED sentinel) so the user can later move them
+      // explicitly into a real category.
+      expect(repo.update).toHaveBeenCalledWith('a', {
+        category: '__uncategorized__',
+      });
+      expect(repo.update).toHaveBeenCalledWith('b', {
+        category: '__uncategorized__',
+      });
       expect(categoryRepo.delete).toHaveBeenCalledWith('sluzbowe');
     });
   });

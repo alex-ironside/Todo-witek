@@ -15,6 +15,12 @@ export type TodoCategory = string;
 // management was introduced reference this id.
 export const DEFAULT_CATEGORY: TodoCategory = 'prywatne';
 
+// Sentinel id for the virtual "no category" bucket. Stored on a todo
+// when its previous category is deleted; also used to surface legacy
+// todos whose `category` field is missing or points at a category that
+// no longer exists.
+export const UNCATEGORIZED: TodoCategory = '__uncategorized__';
+
 // Built-in seed categories created the first time a user opens the app.
 // IDs are deterministic so legacy todos saved with category='prywatne'
 // or 'sluzbowe' continue to point to a real category.
@@ -22,6 +28,15 @@ export const SEED_CATEGORIES: readonly { id: string; name: string }[] = [
   { id: 'prywatne', name: 'Prywatne' },
   { id: 'sluzbowe', name: 'Służbowe' },
 ];
+
+// Legacy literal category ids that older builds wrote onto todos before
+// Firestore moved to auto-generated category ids. When we encounter one
+// of these on a todo, we resolve it by matching the user's category
+// names instead of by id.
+export const LEGACY_CATEGORY_NAME_BY_ID: Readonly<Record<string, string>> = {
+  prywatne: 'prywatne',
+  sluzbowe: 'służbowe',
+};
 
 export interface Todo {
   id: string;
