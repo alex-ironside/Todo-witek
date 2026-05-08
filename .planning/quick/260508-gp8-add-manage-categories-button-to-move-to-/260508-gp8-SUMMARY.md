@@ -31,7 +31,7 @@ The `MoveCategorySheet` now renders a footer button labeled "Zarządzaj kategori
 - `npm run typecheck`: clean.
 - `npm run build`: succeeds.
 - Grep audit: single `ManageCategoriesSheet` render site at `MainList.tsx` — no duplication.
-- Playwright MCP browser verification: pending — orchestrator will run.
+- Browser E2E verified with bundled Playwright chromium (mobile viewport, real Firebase login): clicked todo kebab → "Przenieś do kategorii" → new "Zarządzaj kategoriami" footer button → manage sheet opened with edit/add controls. No console errors.
 
 ## Notes
 
