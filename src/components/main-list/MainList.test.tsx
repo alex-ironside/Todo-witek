@@ -27,11 +27,12 @@ let mockCategories: Category[] = [
   { id: 'prywatne', ownerId: 'u', name: 'Prywatne' },
   { id: 'sluzbowe', ownerId: 'u', name: 'Służbowe' },
 ];
+let mockCategoriesError: Error | null = null;
 vi.mock('../../hooks/useCategories', () => ({
   useCategories: () => ({
     categories: mockCategories,
     loading: false,
-    error: null,
+    error: mockCategoriesError,
   }),
 }));
 
@@ -93,6 +94,7 @@ describe('MainList', () => {
       { id: 'prywatne', ownerId: 'u', name: 'Prywatne' },
       { id: 'sluzbowe', ownerId: 'u', name: 'Służbowe' },
     ];
+    mockCategoriesError = null;
     mockSetCategory.mockClear();
   });
 
@@ -228,6 +230,34 @@ describe('MainList', () => {
     expect(aside?.textContent).toContain('Prywatne');
     expect(aside?.textContent).toMatch(/Prywatne[\s\S]*2/);
     expect(aside?.textContent).toMatch(/Służbowe[\s\S]*1/);
+  });
+
+  describe('categories error surface', () => {
+    it('shows a permission-denied banner with the deploy hint when /categories is blocked by rules', () => {
+      const err = Object.assign(new Error('Missing or insufficient permissions.'), {
+        code: 'permission-denied',
+      });
+      mockCategoriesError = err;
+      mockCategories = [];
+      const { getByRole } = render(wrap(<MainList />));
+      const alert = getByRole('alert');
+      expect(alert.textContent).toMatch(/Reguły Firestore blokują/);
+      expect(alert.textContent).toMatch(
+        /firebase deploy --only firestore:rules/
+      );
+    });
+
+    it('shows a generic load-error banner when categories fail with any other code', () => {
+      mockCategoriesError = new Error('boom');
+      mockCategories = [];
+      const { getByRole } = render(wrap(<MainList />));
+      expect(getByRole('alert').textContent).toMatch(/Nie udało się załadować/);
+    });
+
+    it('renders no banner on the happy path', () => {
+      const { queryByRole } = render(wrap(<MainList />));
+      expect(queryByRole('alert')).toBeNull();
+    });
   });
 
   describe('manage categories', () => {

@@ -93,6 +93,10 @@ export const t = {
   todosLoadError: 'Nie udało się załadować zadań. Odśwież stronę lub spróbuj ponownie później.',
   firestoreNotEnabled:
     'Firestore nie jest włączony — włącz go na console.firebase.google.com',
+  categoriesPermissionDenied:
+    'Reguły Firestore blokują dostęp do kategorii. Wdróż reguły z firestore.rules:  firebase deploy --only firestore:rules',
+  categoriesLoadError:
+    'Nie udało się załadować kategorii. Odśwież stronę lub spróbuj ponownie później.',
 
   // TodoItem / TodoRow
   dragHandle: 'Przeciągnij, aby zmienić kolejność',

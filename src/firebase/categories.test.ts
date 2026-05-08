@@ -57,7 +57,9 @@ describe('categories repository', () => {
   it('createCategory addDoc when no explicit id', async () => {
     addDoc.mockResolvedValue({ id: 'gen-id' });
     const { createCategory } = await importCategories();
+    const before = Date.now();
     const id = await createCategory('user-1', { name: 'Hobby' });
+    const after = Date.now();
     expect(addDoc).toHaveBeenCalledWith(
       { __col: 'categories' },
       expect.objectContaining({
@@ -67,6 +69,13 @@ describe('categories repository', () => {
         updatedAt: '__SERVER_TS__',
       })
     );
+    // Position must be a positive timestamp so that, with the ascending
+    // sort in observeUserCategories, freshly created categories end up
+    // AFTER existing ones — that's where users expect what they just
+    // added to appear in the tab bar.
+    const payload = addDoc.mock.calls[0][1] as { position: number };
+    expect(payload.position).toBeGreaterThanOrEqual(before);
+    expect(payload.position).toBeLessThanOrEqual(after);
     expect(id).toBe('gen-id');
   });
 
