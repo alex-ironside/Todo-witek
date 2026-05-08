@@ -358,6 +358,14 @@ export default function MainList({
         categories={categories}
         onClose={() => setMoveForId(null)}
         onMove={handleMoveSelect}
+        onManageCategories={
+          categoryRepo
+            ? () => {
+                setMoveForId(null);
+                setManageOpen(true);
+              }
+            : undefined
+        }
       />
       <ManageCategoriesSheet
         open={manageOpen}

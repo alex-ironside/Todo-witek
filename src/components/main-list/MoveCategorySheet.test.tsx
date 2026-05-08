@@ -113,4 +113,59 @@ describe('MoveCategorySheet', () => {
     );
     expect(queryByText('Tutaj')).toBeNull();
   });
+
+  it('does not render a Zarządzaj kategoriami button when onManageCategories is not provided', () => {
+    const { queryByRole } = render(
+      <MoveCategorySheet
+        todo={todoIn('prywatne')}
+        categories={cats}
+        onClose={vi.fn()}
+        onMove={vi.fn()}
+      />
+    );
+    expect(
+      queryByRole('button', { name: 'Zarządzaj kategoriami' })
+    ).toBeNull();
+  });
+
+  it('renders a Zarządzaj kategoriami button when onManageCategories is provided', () => {
+    const { getByRole } = render(
+      <MoveCategorySheet
+        todo={todoIn('prywatne')}
+        categories={cats}
+        onClose={vi.fn()}
+        onMove={vi.fn()}
+        onManageCategories={vi.fn()}
+      />
+    );
+    expect(
+      getByRole('button', { name: 'Zarządzaj kategoriami' })
+    ).toBeInTheDocument();
+  });
+
+  it('clicking Zarządzaj kategoriami invokes onManageCategories then onClose, not onMove', () => {
+    const onManage = vi.fn();
+    const onClose = vi.fn();
+    const onMove = vi.fn();
+    const { getByRole } = render(
+      <MoveCategorySheet
+        todo={todoIn('prywatne')}
+        categories={cats}
+        onClose={onClose}
+        onMove={onMove}
+        onManageCategories={onManage}
+      />
+    );
+    fireEvent.click(
+      getByRole('button', { name: 'Zarządzaj kategoriami' })
+    );
+    expect(onManage).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onMove).not.toHaveBeenCalled();
+    // Order: manage handler invoked before close so the parent can sequence
+    // setMoveForId(null) → setManageOpen(true).
+    const manageOrder = onManage.mock.invocationCallOrder[0];
+    const closeOrder = onClose.mock.invocationCallOrder[0];
+    expect(manageOrder).toBeLessThan(closeOrder);
+  });
 });

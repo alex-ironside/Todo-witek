@@ -487,6 +487,33 @@ describe('MainList', () => {
         expect(dialog?.textContent).toContain('Służbowe');
       });
 
+      it('move sheet exposes a Zarządzaj kategoriami button that closes it and opens the manage sheet', () => {
+        const { getByLabelText, getByText, getAllByRole } = render(
+          wrap(<MainList />)
+        );
+        fireEvent.click(getByLabelText('Więcej akcji'));
+        fireEvent.click(getByText('Przenieś'));
+        const moveDialog = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Przenieś do kategorii'
+        )!;
+        const manageBtn = Array.from(
+          moveDialog.querySelectorAll('button')
+        ).find((b) => b.textContent === 'Zarządzaj kategoriami');
+        expect(manageBtn).toBeDefined();
+        fireEvent.click(manageBtn!);
+        // Move sheet has closed
+        const moveAfter = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Przenieś do kategorii'
+        );
+        expect(moveAfter?.className).toContain('translate-y-full');
+        // Manage sheet is now open — same instance the drawer opens
+        const manageDialog = getAllByRole('dialog').find(
+          (d) => d.getAttribute('aria-label') === 'Zarządzaj kategoriami'
+        );
+        expect(manageDialog).toBeDefined();
+        expect(manageDialog?.className).toContain('translate-y-0');
+      });
+
       it('selecting a category in the move sheet calls repo.update with that category', async () => {
         const repo = makeRepo();
         const { getByLabelText, getByText, getAllByRole } = render(
