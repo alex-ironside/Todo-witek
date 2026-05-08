@@ -7,6 +7,11 @@ interface MoveCategorySheetProps {
   categories: Category[];
   onClose: () => void;
   onMove: (todoId: string, categoryId: string) => void | Promise<void>;
+  // Optional: when provided, a footer "Zarządzaj kategoriami" button is
+  // rendered. Clicking it invokes this handler then onClose, mirroring
+  // Drawer.tsx so the parent can sequence move-sheet close + manage-sheet
+  // open.
+  onManageCategories?: () => void;
 }
 
 // Bottom sheet that lists every category as a tap target. Picking the
@@ -18,6 +23,7 @@ export default function MoveCategorySheet({
   categories,
   onClose,
   onMove,
+  onManageCategories,
 }: MoveCategorySheetProps) {
   const open = todo !== null;
 
@@ -36,28 +42,42 @@ export default function MoveCategorySheet({
       {todo === null ? (
         <span aria-hidden="true" />
       ) : (
-        <ul className="flex flex-col divide-y divide-hairlineSoft">
-          {categories.map((cat) => {
-            const isCurrent = todo.category === cat.id;
-            return (
-              <li key={cat.id}>
-                <button
-                  type="button"
-                  onClick={() => void handlePick(cat.id)}
-                  aria-current={isCurrent ? 'true' : undefined}
-                  className="w-full flex items-center justify-between min-h-[48px] px-2 text-left text-text"
-                >
-                  <span className="text-base">{cat.name}</span>
-                  {isCurrent && (
-                    <span className="text-textMute text-sm">
-                      {t.moveToCategoryHere}
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="flex flex-col divide-y divide-hairlineSoft">
+            {categories.map((cat) => {
+              const isCurrent = todo.category === cat.id;
+              return (
+                <li key={cat.id}>
+                  <button
+                    type="button"
+                    onClick={() => void handlePick(cat.id)}
+                    aria-current={isCurrent ? 'true' : undefined}
+                    className="w-full flex items-center justify-between min-h-[48px] px-2 text-left text-text"
+                  >
+                    <span className="text-base">{cat.name}</span>
+                    {isCurrent && (
+                      <span className="text-textMute text-sm">
+                        {t.moveToCategoryHere}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {onManageCategories && (
+            <button
+              type="button"
+              onClick={() => {
+                onManageCategories();
+                onClose();
+              }}
+              className="w-full flex items-center justify-center min-h-[48px] mt-2 border-t border-hairlineSoft text-text font-medium"
+            >
+              {t.manageCategories}
+            </button>
+          )}
+        </>
       )}
     </Sheet>
   );
