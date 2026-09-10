@@ -91,6 +91,9 @@ func decode(encoded string) (Params, []byte, []byte, error) {
 	if err != nil {
 		return Params{}, nil, nil, ErrInvalidHash
 	}
+	if p.Iterations < 1 || p.Parallelism < 1 || len(salt) == 0 || len(key) == 0 {
+		return Params{}, nil, nil, ErrInvalidHash
+	}
 	p.SaltLength = uint32(len(salt))
 	p.KeyLength = uint32(len(key))
 	return p, salt, key, nil

@@ -1,0 +1,6 @@
+/.env
+*.env
+!.env.example
+/serve
+/seed-user
+*.exe
