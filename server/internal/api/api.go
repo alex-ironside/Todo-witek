@@ -19,6 +19,14 @@ import (
 
 const sessionCookie = "session"
 
+// maxBodyBytes caps every request body so an unauthenticated client cannot
+// exhaust memory with a giant JSON payload (e.g. a multi-GB login password).
+const maxBodyBytes = 1 << 20
+
+// maxReorderIDs caps a reorder request so one client cannot hold a pooled
+// connection for a huge per-id UPDATE loop and starve everyone else.
+const maxReorderIDs = 10000
+
 // dummyHash is verified against when a login email is unknown, so an unknown
 // email and a wrong password cost the same argon2 work — no user-enumeration
 // via response timing.
@@ -78,8 +86,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid body")
+	if !decodeJSON(w, r, &body) {
 		return
 	}
 	u, hash, err := s.store.UserByEmail(r.Context(), body.Email)
@@ -154,8 +161,7 @@ func (s *Server) createTodo(w http.ResponseWriter, r *http.Request) {
 		Category  string           `json:"category"`
 		Reminders []store.Reminder `json:"reminders"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid body")
+	if !decodeJSON(w, r, &body) {
 		return
 	}
 	title := strings.TrimSpace(body.Title)
@@ -190,8 +196,7 @@ func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 		Done      *bool             `json:"done"`
 		Reminders *[]store.Reminder `json:"reminders"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid body")
+	if !decodeJSON(w, r, &body) {
 		return
 	}
 	if body.Category != nil && !validCategory(*body.Category) {
@@ -242,8 +247,11 @@ func (s *Server) reorderTodos(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		OrderedIDs []string `json:"orderedIds"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeErr(w, http.StatusBadRequest, "invalid body")
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if len(body.OrderedIDs) > maxReorderIDs {
+		writeErr(w, http.StatusBadRequest, "too many ids")
 		return
 	}
 	for _, id := range body.OrderedIDs {
@@ -284,6 +292,15 @@ func (s *Server) expireCookie() *http.Cookie {
 }
 
 func validCategory(c string) bool { return c == "prywatne" || c == "sluzbowe" }
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+	if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid body")
+		return false
+	}
+	return true
+}
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")

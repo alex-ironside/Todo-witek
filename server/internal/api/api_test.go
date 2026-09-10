@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -226,6 +227,20 @@ func TestAuthFlow(t *testing.T) {
 	}
 }
 
+// An oversized body is rejected before auth, proving the MaxBytesReader cap.
+func TestBodySizeLimitRejectsHugePayload(t *testing.T) {
+	srv := New(nil, Config{})
+	ts := httptest.NewServer(srv.Router())
+	defer ts.Close()
+	huge := strings.Repeat("a", maxBodyBytes+1024)
+	resp := rawReq(t, newClient(t), "POST", ts.URL+"/auth/login",
+		`{"email":"a@example.com","password":"`+huge+`"}`)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("oversized login body: status %d, want 400", resp.StatusCode)
+	}
+}
+
 func TestTodosRequireAuth(t *testing.T) {
 	e := setup(t)
 	for _, tc := range []struct{ method, path string }{
@@ -408,6 +423,15 @@ func TestReorder(t *testing.T) {
 	if resp := req(t, c, "POST", e.url+"/todos/reorder", map[string]any{"orderedIds": []string{"not-a-uuid"}}); resp.StatusCode != http.StatusBadRequest {
 		resp.Body.Close()
 		t.Fatalf("reorder bad id: status %d", resp.StatusCode)
+	}
+	// Too many ids -> 400 (before any uuid validation or DB work).
+	tooMany := make([]string, maxReorderIDs+1)
+	for i := range tooMany {
+		tooMany[i] = "x"
+	}
+	if resp := req(t, c, "POST", e.url+"/todos/reorder", map[string]any{"orderedIds": tooMany}); resp.StatusCode != http.StatusBadRequest {
+		resp.Body.Close()
+		t.Fatalf("reorder too many ids: status %d", resp.StatusCode)
 	}
 }
 

@@ -31,6 +31,8 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           srv.Router(),
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
 	}
 	log.Printf("listening on :%s", port)
 	log.Fatal(httpSrv.ListenAndServe())
