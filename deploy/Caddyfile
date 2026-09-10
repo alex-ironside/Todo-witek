@@ -1,0 +1,19 @@
+{$DOMAIN} {
+	encode gzip zstd
+
+	# API requests go to the Go server on the same origin, so the SameSite=Lax
+	# session cookie is sent and no CORS is needed. Keep this path list in sync
+	# with the chi routes in server/internal/api/api.go.
+	@api path /auth/* /todos /todos/* /categories /categories/* /health
+	handle @api {
+		reverse_proxy server:8080
+	}
+
+	# Everything else is the built single-page app; unknown paths fall back to
+	# index.html so client-side navigation works.
+	handle {
+		root * /srv/www
+		try_files {path} /index.html
+		file_server
+	}
+}

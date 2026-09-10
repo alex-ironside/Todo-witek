@@ -1,0 +1,36 @@
+# Hetzner deployment: the Go API behind Caddy, which also serves the built SPA
+# on the same origin and terminates TLS. Postgres is external (Neon), passed in
+# as DATABASE_URL. Run from this directory with an .env holding DOMAIN and
+# DATABASE_URL: `docker compose --env-file .env up -d --build`.
+services:
+  server:
+    build:
+      context: ../server
+    image: todo-witek-server:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      PORT: "8080"
+      # COOKIE_SECURE is left unset, so Secure cookies are on (Caddy serves HTTPS).
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../dist:/srv/www:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

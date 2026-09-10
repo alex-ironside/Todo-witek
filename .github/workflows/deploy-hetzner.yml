@@ -1,0 +1,57 @@
+name: Deploy to Hetzner
+
+# Manual for now. To make a merge to main deploy automatically, uncomment the
+# push trigger below once the VPS and the secrets listed in deploy/DEPLOY.md
+# exist — otherwise every push would fail on the missing secrets.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+concurrency:
+  group: hetzner-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test -- --run
+
+      - name: Build frontend for same-origin hosting
+        env:
+          VITE_BASE: /
+        run: npm run build
+
+      - name: Set up SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.HETZNER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Ship repo and built assets
+        env:
+          HOST: ${{ secrets.HETZNER_HOST }}
+          USER: ${{ secrets.HETZNER_USER }}
+          APP_DIR: /opt/todo-witek
+        run: |
+          ssh "$USER@$HOST" "mkdir -p $APP_DIR"
+          rsync -az --delete server deploy dist "$USER@$HOST:$APP_DIR/"
+
+      - name: Build and restart the stack
+        env:
+          HOST: ${{ secrets.HETZNER_HOST }}
+          USER: ${{ secrets.HETZNER_USER }}
+          APP_DIR: /opt/todo-witek
+        run: |
+          ssh "$USER@$HOST" "cd $APP_DIR/deploy && docker compose --env-file .env up -d --build"
