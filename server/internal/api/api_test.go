@@ -330,18 +330,13 @@ func TestTodosCRUD(t *testing.T) {
 		t.Fatalf("patch missing: status %d", resp.StatusCode)
 	}
 
-	// Delete.
-	if resp := req(t, c, "DELETE", e.url+"/todos/"+defCat.ID, nil); resp.StatusCode != http.StatusNoContent {
-		resp.Body.Close()
-		t.Fatalf("delete status %d", resp.StatusCode)
-	}
-	if resp := req(t, c, "DELETE", e.url+"/todos/"+defCat.ID, nil); resp.StatusCode != http.StatusNotFound {
-		resp.Body.Close()
-		t.Fatalf("delete again: status %d", resp.StatusCode)
-	}
-	if resp := req(t, c, "DELETE", e.url+"/todos/not-a-uuid", nil); resp.StatusCode != http.StatusNotFound {
-		resp.Body.Close()
-		t.Fatalf("delete bad uuid: status %d", resp.StatusCode)
+	// Delete is idempotent (matching Firestore deleteDoc): the first delete, a
+	// repeat, and a malformed id all return 204.
+	for _, id := range []string{defCat.ID, defCat.ID, "not-a-uuid"} {
+		if resp := req(t, c, "DELETE", e.url+"/todos/"+id, nil); resp.StatusCode != http.StatusNoContent {
+			resp.Body.Close()
+			t.Fatalf("delete %q: status %d", id, resp.StatusCode)
+		}
 	}
 }
 
@@ -361,12 +356,13 @@ func TestOwnerIsolation(t *testing.T) {
 	if len(bobList) != 0 {
 		t.Fatalf("bob sees %d todos", len(bobList))
 	}
-	// Bob cannot patch or delete it -> 404.
+	// Bob's patch of alice's id is 404; his idempotent delete returns 204 but
+	// must not remove alice's row (verified below).
 	if resp := req(t, bob, "PATCH", e.url+"/todos/"+aTodo.ID, map[string]any{"title": "hijack"}); resp.StatusCode != http.StatusNotFound {
 		resp.Body.Close()
 		t.Fatalf("bob patch: status %d", resp.StatusCode)
 	}
-	if resp := req(t, bob, "DELETE", e.url+"/todos/"+aTodo.ID, nil); resp.StatusCode != http.StatusNotFound {
+	if resp := req(t, bob, "DELETE", e.url+"/todos/"+aTodo.ID, nil); resp.StatusCode != http.StatusNoContent {
 		resp.Body.Close()
 		t.Fatalf("bob delete: status %d", resp.StatusCode)
 	}

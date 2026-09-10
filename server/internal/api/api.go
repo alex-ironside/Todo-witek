@@ -224,15 +224,11 @@ func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteTodo(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if uuid.Validate(id) != nil {
-		writeErr(w, http.StatusNotFound, "not found")
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	err := s.store.DeleteTodo(r.Context(), userFrom(r.Context()).ID, id)
-	if errors.Is(err, store.ErrNotFound) {
-		writeErr(w, http.StatusNotFound, "not found")
-		return
-	}
-	if err != nil {
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		writeErr(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -329,8 +325,6 @@ func (s *Server) patchCategory(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	// Delete is idempotent (matching Firestore deleteDoc): a malformed or
-	// unknown id is simply "already gone", so it returns 204, not 404.
 	if uuid.Validate(id) != nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
