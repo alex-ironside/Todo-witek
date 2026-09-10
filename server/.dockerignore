@@ -1,0 +1,8 @@
+.env
+*.env
+!.env.example
+*.exe
+serve
+seed-user
+Dockerfile
+.dockerignore
