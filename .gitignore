@@ -14,6 +14,9 @@ dist-ssr
 
 coverage
 
+# CodeGraph local index (rebuildable cache)
+.codegraph/
+
 # Firebase user-specific
 .firebase
 .firebaserc

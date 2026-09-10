@@ -249,6 +249,10 @@ func TestTodosRequireAuth(t *testing.T) {
 		{"POST", "/todos/reorder"},
 		{"PATCH", "/todos/00000000-0000-0000-0000-000000000000"},
 		{"DELETE", "/todos/00000000-0000-0000-0000-000000000000"},
+		{"GET", "/categories"},
+		{"POST", "/categories"},
+		{"PATCH", "/categories/00000000-0000-0000-0000-000000000000"},
+		{"DELETE", "/categories/00000000-0000-0000-0000-000000000000"},
 	} {
 		resp := req(t, newClient(t), tc.method, e.url+tc.path, map[string]string{})
 		resp.Body.Close()
@@ -288,16 +292,11 @@ func TestTodosCRUD(t *testing.T) {
 		t.Fatalf("list len %d", len(list))
 	}
 
-	// Validation 400s.
-	for _, body := range []map[string]any{
-		{"title": "   "},                    // empty after trim
-		{"title": "x", "category": "bogus"}, // bad category
-	} {
-		resp := req(t, c, "POST", e.url+"/todos", body)
+	// Validation: empty title -> 400. (Category is a free-form soft reference,
+	// so any category string is accepted; see TestTodoAcceptsCustomCategory.)
+	if resp := req(t, c, "POST", e.url+"/todos", map[string]any{"title": "   "}); resp.StatusCode != http.StatusBadRequest {
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusBadRequest {
-			t.Fatalf("create %v: status %d, want 400", body, resp.StatusCode)
-		}
+		t.Fatalf("empty title: status %d, want 400", resp.StatusCode)
 	}
 	if resp := rawReq(t, c, "POST", e.url+"/todos", "{bad"); resp.StatusCode != http.StatusBadRequest {
 		resp.Body.Close()
@@ -311,16 +310,10 @@ func TestTodosCRUD(t *testing.T) {
 		t.Fatalf("patched wrong: %+v", patched)
 	}
 
-	// Patch validation.
-	for _, body := range []map[string]any{
-		{"category": "bogus"},
-		{"title": "  "},
-	} {
-		resp := req(t, c, "PATCH", e.url+"/todos/"+created.ID, body)
+	// Patch validation: empty title -> 400.
+	if resp := req(t, c, "PATCH", e.url+"/todos/"+created.ID, map[string]any{"title": "  "}); resp.StatusCode != http.StatusBadRequest {
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusBadRequest {
-			t.Fatalf("patch %v: status %d, want 400", body, resp.StatusCode)
-		}
+		t.Fatalf("patch empty title: status %d, want 400", resp.StatusCode)
 	}
 	if resp := rawReq(t, c, "PATCH", e.url+"/todos/"+created.ID, "{bad"); resp.StatusCode != http.StatusBadRequest {
 		resp.Body.Close()
@@ -435,6 +428,125 @@ func TestReorder(t *testing.T) {
 	}
 }
 
+func TestCategoriesCRUD(t *testing.T) {
+	e := setup(t)
+	e.seed(t, "cats@example.com", "catspassword12")
+	c := e.login(t, "cats@example.com", "catspassword12")
+
+	var created store.Category
+	decode(t, req(t, c, "POST", e.url+"/categories", map[string]any{"name": "Work"}), &created)
+	if created.ID == "" || created.Name != "Work" || created.Position <= 0 {
+		t.Fatalf("created wrong: %+v", created)
+	}
+	// A client-supplied id is ignored; the server generates the id.
+	var ignored store.Category
+	decode(t, req(t, c, "POST", e.url+"/categories", map[string]any{"name": "Home", "id": "prywatne"}), &ignored)
+	if ignored.ID == "prywatne" {
+		t.Fatalf("server honored client-supplied id: %+v", ignored)
+	}
+
+	var list []store.Category
+	decode(t, req(t, c, "GET", e.url+"/categories", nil), &list)
+	if len(list) != 2 {
+		t.Fatalf("list len %d", len(list))
+	}
+
+	if resp := req(t, c, "POST", e.url+"/categories", map[string]any{"name": "  "}); resp.StatusCode != http.StatusBadRequest {
+		resp.Body.Close()
+		t.Fatalf("empty name: %d", resp.StatusCode)
+	}
+	if resp := rawReq(t, c, "POST", e.url+"/categories", "{bad"); resp.StatusCode != http.StatusBadRequest {
+		resp.Body.Close()
+		t.Fatalf("bad json: %d", resp.StatusCode)
+	}
+
+	var patched store.Category
+	decode(t, req(t, c, "PATCH", e.url+"/categories/"+created.ID, map[string]any{"name": "Office", "position": 42}), &patched)
+	if patched.Name != "Office" || patched.Position != 42 {
+		t.Fatalf("patched wrong: %+v", patched)
+	}
+	if resp := req(t, c, "PATCH", e.url+"/categories/"+created.ID, map[string]any{"name": "  "}); resp.StatusCode != http.StatusBadRequest {
+		resp.Body.Close()
+		t.Fatalf("patch empty name: %d", resp.StatusCode)
+	}
+	if resp := rawReq(t, c, "PATCH", e.url+"/categories/"+created.ID, "{bad"); resp.StatusCode != http.StatusBadRequest {
+		resp.Body.Close()
+		t.Fatalf("patch bad json: %d", resp.StatusCode)
+	}
+	if resp := req(t, c, "PATCH", e.url+"/categories/not-a-uuid", map[string]any{"name": "x"}); resp.StatusCode != http.StatusNotFound {
+		resp.Body.Close()
+		t.Fatalf("patch bad uuid: %d", resp.StatusCode)
+	}
+	if resp := req(t, c, "PATCH", e.url+"/categories/11111111-1111-1111-1111-111111111111", map[string]any{"name": "x"}); resp.StatusCode != http.StatusNotFound {
+		resp.Body.Close()
+		t.Fatalf("patch missing: %d", resp.StatusCode)
+	}
+
+	// Delete is idempotent, and a malformed id is 204 too.
+	for _, id := range []string{created.ID, created.ID, "not-a-uuid"} {
+		if resp := req(t, c, "DELETE", e.url+"/categories/"+id, nil); resp.StatusCode != http.StatusNoContent {
+			resp.Body.Close()
+			t.Fatalf("delete %q: %d", id, resp.StatusCode)
+		}
+	}
+}
+
+// A todo can be tagged with a user-created category id through the API — the
+// end-to-end flow the category feature exists for.
+func TestTodoAcceptsCustomCategory(t *testing.T) {
+	e := setup(t)
+	e.seed(t, "cc@example.com", "ccpassword1234")
+	c := e.login(t, "cc@example.com", "ccpassword1234")
+
+	var cat store.Category
+	decode(t, req(t, c, "POST", e.url+"/categories", map[string]any{"name": "Groceries"}), &cat)
+
+	var td store.Todo
+	decode(t, req(t, c, "POST", e.url+"/todos", map[string]any{"title": "milk", "category": cat.ID}), &td)
+	if td.Category != cat.ID {
+		t.Fatalf("create: todo category = %q, want %q", td.Category, cat.ID)
+	}
+
+	var other store.Todo
+	decode(t, req(t, c, "POST", e.url+"/todos", map[string]any{"title": "eggs"}), &other)
+	var patched store.Todo
+	decode(t, req(t, c, "PATCH", e.url+"/todos/"+other.ID, map[string]any{"category": cat.ID}), &patched)
+	if patched.Category != cat.ID {
+		t.Fatalf("patch: todo category = %q, want %q", patched.Category, cat.ID)
+	}
+}
+
+func TestCategoryOwnerIsolationHTTP(t *testing.T) {
+	e := setup(t)
+	e.seed(t, "ca@example.com", "capassword1234")
+	e.seed(t, "cb@example.com", "cbpassword1234")
+	alice := e.login(t, "ca@example.com", "capassword1234")
+	bob := e.login(t, "cb@example.com", "cbpassword1234")
+
+	var aCat store.Category
+	decode(t, req(t, alice, "POST", e.url+"/categories", map[string]any{"name": "secret"}), &aCat)
+
+	var bobList []store.Category
+	decode(t, req(t, bob, "GET", e.url+"/categories", nil), &bobList)
+	if len(bobList) != 0 {
+		t.Fatalf("bob sees alice's categories: %+v", bobList)
+	}
+	if resp := req(t, bob, "PATCH", e.url+"/categories/"+aCat.ID, map[string]any{"name": "hijack"}); resp.StatusCode != http.StatusNotFound {
+		resp.Body.Close()
+		t.Fatalf("bob patch: %d", resp.StatusCode)
+	}
+	// Bob's idempotent delete returns 204 but must not remove alice's row.
+	if resp := req(t, bob, "DELETE", e.url+"/categories/"+aCat.ID, nil); resp.StatusCode != http.StatusNoContent {
+		resp.Body.Close()
+		t.Fatalf("bob delete: %d", resp.StatusCode)
+	}
+	var aList []store.Category
+	decode(t, req(t, alice, "GET", e.url+"/categories", nil), &aList)
+	if len(aList) != 1 || aList[0].ID != aCat.ID {
+		t.Fatalf("alice's category affected by bob: %+v", aList)
+	}
+}
+
 // withUser returns a request carrying an authenticated user in context, so a
 // handler can be called directly (bypassing the router/middleware) to reach its
 // store-error branch on a deliberately broken store.
@@ -466,14 +578,18 @@ func TestHandlerStoreErrors(t *testing.T) {
 
 	// Each authed handler surfaces its store error as 500.
 	handlers := map[string]http.HandlerFunc{
-		"list":    e.srv.listTodos,
-		"create":  e.srv.createTodo,
-		"reorder": e.srv.reorderTodos,
+		"list":      e.srv.listTodos,
+		"create":    e.srv.createTodo,
+		"reorder":   e.srv.reorderTodos,
+		"listcat":   e.srv.listCategories,
+		"createcat": e.srv.createCategory,
 	}
 	bodies := map[string]string{
-		"list":    `{}`,
-		"create":  `{"title":"x"}`,
-		"reorder": `{"orderedIds":["11111111-1111-1111-1111-111111111111"]}`,
+		"list":      `{}`,
+		"create":    `{"title":"x"}`,
+		"reorder":   `{"orderedIds":["11111111-1111-1111-1111-111111111111"]}`,
+		"listcat":   `{}`,
+		"createcat": `{"name":"x"}`,
 	}
 	for name, h := range handlers {
 		rec := httptest.NewRecorder()
@@ -483,7 +599,12 @@ func TestHandlerStoreErrors(t *testing.T) {
 		}
 	}
 	// patch and delete need a valid uuid to get past validation to the store.
-	for name, h := range map[string]http.HandlerFunc{"patch": e.srv.patchTodo, "delete": e.srv.deleteTodo} {
+	for name, h := range map[string]http.HandlerFunc{
+		"patch":     e.srv.patchTodo,
+		"delete":    e.srv.deleteTodo,
+		"patchcat":  e.srv.patchCategory,
+		"deletecat": e.srv.deleteCategory,
+	} {
 		r := withUser(u, `{"done":true}`)
 		r = withURLParam(r, "id", "11111111-1111-1111-1111-111111111111")
 		rec := httptest.NewRecorder()

@@ -24,11 +24,25 @@ CREATE TABLE IF NOT EXISTS todos (
     done       boolean NOT NULL DEFAULT false,
     reminders  jsonb NOT NULL DEFAULT '[]'::jsonb,
     position   double precision NOT NULL,
-    category   text NOT NULL DEFAULT 'prywatne' CHECK (category IN ('prywatne', 'sluzbowe')),
+    category   text NOT NULL DEFAULT 'prywatne',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS todos_owner_created_idx ON todos (owner_id, created_at DESC);
+
+-- User-managed categories. category on a todo is a soft reference to a
+-- categories.id (dangling/legacy values are resolved to a virtual bucket on
+-- the client), so there is deliberately no foreign key from todos.category and
+-- no unique(owner_id, name): the app never enforced either.
+CREATE TABLE IF NOT EXISTS categories (
+    id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id   uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       text NOT NULL,
+    position   double precision NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS categories_owner_position_idx ON categories (owner_id, position);
 
 CREATE TABLE IF NOT EXISTS push_subscriptions (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),

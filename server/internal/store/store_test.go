@@ -392,6 +392,120 @@ func TestOperationsOnClosedPool(t *testing.T) {
 	if err := s.ReorderTodos(ctx, u.ID, []string{todo.ID}); err == nil {
 		t.Error("ReorderTodos: want error")
 	}
+	if _, err := s.ListCategories(ctx, u.ID); err == nil {
+		t.Error("ListCategories: want error")
+	}
+	if _, err := s.CreateCategory(ctx, u.ID, "c"); err == nil {
+		t.Error("CreateCategory: want error")
+	}
+	name := "n"
+	if _, err := s.UpdateCategory(ctx, u.ID, "11111111-1111-1111-1111-111111111111", CategoryUpdate{Name: &name}); err == nil {
+		t.Error("UpdateCategory: want error")
+	}
+	if err := s.DeleteCategory(ctx, u.ID, "11111111-1111-1111-1111-111111111111"); err == nil {
+		t.Error("DeleteCategory: want error")
+	}
+}
+
+func TestCategoryCreateListOrder(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	u := mustUser(t, s, "cat@example.com")
+
+	first, err := s.CreateCategory(ctx, u.ID, "Prywatne")
+	if err != nil {
+		t.Fatalf("create first: %v", err)
+	}
+	if first.ID == "" || first.Position <= 0 {
+		t.Fatalf("unexpected category %+v", first)
+	}
+	time.Sleep(2 * time.Millisecond)
+	second, _ := s.CreateCategory(ctx, u.ID, "Sluzbowe")
+
+	list, err := s.ListCategories(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(list) != 2 || list[0].ID != first.ID || list[1].ID != second.ID {
+		t.Fatalf("want position-ascending [%s,%s], got %+v", first.ID, second.ID, list)
+	}
+}
+
+func TestCategoryUpdate(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	u := mustUser(t, s, "catupd@example.com")
+	c, _ := s.CreateCategory(ctx, u.ID, "old")
+
+	name := "renamed"
+	pos := 5.0
+	updated, err := s.UpdateCategory(ctx, u.ID, c.ID, CategoryUpdate{Name: &name, Position: &pos})
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if updated.Name != "renamed" || updated.Position != 5.0 {
+		t.Fatalf("update not applied: %+v", updated)
+	}
+	if !updated.UpdatedAt.After(c.UpdatedAt) {
+		t.Fatalf("updated_at not bumped")
+	}
+	// Partial update leaves the other field intact.
+	onlyName := "again"
+	u2, err := s.UpdateCategory(ctx, u.ID, c.ID, CategoryUpdate{Name: &onlyName})
+	if err != nil {
+		t.Fatalf("update2: %v", err)
+	}
+	if u2.Position != 5.0 {
+		t.Fatalf("position should persist: %+v", u2)
+	}
+
+	if _, err := s.UpdateCategory(ctx, u.ID, "00000000-0000-0000-0000-000000000000", CategoryUpdate{Name: &name}); err != ErrNotFound {
+		t.Fatalf("want ErrNotFound, got %v", err)
+	}
+}
+
+func TestCategoryDeleteIdempotent(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	u := mustUser(t, s, "catdel@example.com")
+	c, _ := s.CreateCategory(ctx, u.ID, "temp")
+
+	if err := s.DeleteCategory(ctx, u.ID, c.ID); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	// Deleting again is not an error (idempotent, matching Firestore).
+	if err := s.DeleteCategory(ctx, u.ID, c.ID); err != nil {
+		t.Fatalf("delete again: %v", err)
+	}
+	list, _ := s.ListCategories(ctx, u.ID)
+	if len(list) != 0 {
+		t.Fatalf("want empty after delete, got %+v", list)
+	}
+}
+
+func TestCategoryOwnerIsolation(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	alice := mustUser(t, s, "acat@example.com")
+	bob := mustUser(t, s, "bcat@example.com")
+	aCat, _ := s.CreateCategory(ctx, alice.ID, "alice cat")
+
+	bobList, _ := s.ListCategories(ctx, bob.ID)
+	if len(bobList) != 0 {
+		t.Fatalf("bob sees alice's categories: %+v", bobList)
+	}
+	name := "hijack"
+	if _, err := s.UpdateCategory(ctx, bob.ID, aCat.ID, CategoryUpdate{Name: &name}); err != ErrNotFound {
+		t.Fatalf("bob updated alice's category: %v", err)
+	}
+	// Bob's idempotent delete of alice's id must not remove alice's row.
+	if err := s.DeleteCategory(ctx, bob.ID, aCat.ID); err != nil {
+		t.Fatalf("bob delete: %v", err)
+	}
+	aliceList, _ := s.ListCategories(ctx, alice.ID)
+	if len(aliceList) != 1 || aliceList[0].ID != aCat.ID {
+		t.Fatalf("alice's category affected by bob: %+v", aliceList)
+	}
 }
 
 // An invalid UUID in the ordered list makes the in-transaction UPDATE fail on

@@ -67,6 +67,10 @@ func (s *Server) Router() http.Handler {
 		r.Post("/todos/reorder", s.reorderTodos)
 		r.Patch("/todos/{id}", s.patchTodo)
 		r.Delete("/todos/{id}", s.deleteTodo)
+		r.Get("/categories", s.listCategories)
+		r.Post("/categories", s.createCategory)
+		r.Patch("/categories/{id}", s.patchCategory)
+		r.Delete("/categories/{id}", s.deleteCategory)
 	})
 	return r
 }
@@ -172,10 +176,6 @@ func (s *Server) createTodo(w http.ResponseWriter, r *http.Request) {
 	if body.Category == "" {
 		body.Category = "prywatne"
 	}
-	if !validCategory(body.Category) {
-		writeErr(w, http.StatusBadRequest, "invalid category")
-		return
-	}
 	todo, err := s.store.CreateTodo(r.Context(), userFrom(r.Context()).ID, title, body.Category, body.Reminders)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "internal error")
@@ -197,10 +197,6 @@ func (s *Server) patchTodo(w http.ResponseWriter, r *http.Request) {
 		Reminders *[]store.Reminder `json:"reminders"`
 	}
 	if !decodeJSON(w, r, &body) {
-		return
-	}
-	if body.Category != nil && !validCategory(*body.Category) {
-		writeErr(w, http.StatusBadRequest, "invalid category")
 		return
 	}
 	if body.Title != nil {
@@ -267,6 +263,85 @@ func (s *Server) reorderTodos(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) listCategories(w http.ResponseWriter, r *http.Request) {
+	cats, err := s.store.ListCategories(r.Context(), userFrom(r.Context()).ID)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, cats)
+}
+
+func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	name := strings.TrimSpace(body.Name)
+	if name == "" {
+		writeErr(w, http.StatusBadRequest, "name required")
+		return
+	}
+	cat, err := s.store.CreateCategory(r.Context(), userFrom(r.Context()).ID, name)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusCreated, cat)
+}
+
+func (s *Server) patchCategory(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if uuid.Validate(id) != nil {
+		writeErr(w, http.StatusNotFound, "not found")
+		return
+	}
+	var body struct {
+		Name     *string  `json:"name"`
+		Position *float64 `json:"position"`
+	}
+	if !decodeJSON(w, r, &body) {
+		return
+	}
+	if body.Name != nil {
+		name := strings.TrimSpace(*body.Name)
+		if name == "" {
+			writeErr(w, http.StatusBadRequest, "name required")
+			return
+		}
+		body.Name = &name
+	}
+	cat, err := s.store.UpdateCategory(r.Context(), userFrom(r.Context()).ID, id, store.CategoryUpdate{
+		Name: body.Name, Position: body.Position,
+	})
+	if errors.Is(err, store.ErrNotFound) {
+		writeErr(w, http.StatusNotFound, "not found")
+		return
+	}
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	writeJSON(w, http.StatusOK, cat)
+}
+
+func (s *Server) deleteCategory(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	// Delete is idempotent (matching Firestore deleteDoc): a malformed or
+	// unknown id is simply "already gone", so it returns 204, not 404.
+	if uuid.Validate(id) != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if err := s.store.DeleteCategory(r.Context(), userFrom(r.Context()).ID, id); err != nil {
+		writeErr(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) sessionCookie(token string, expires time.Time) *http.Cookie {
 	return &http.Cookie{
 		Name:     sessionCookie,
@@ -290,8 +365,6 @@ func (s *Server) expireCookie() *http.Cookie {
 		SameSite: http.SameSiteLaxMode,
 	}
 }
-
-func validCategory(c string) bool { return c == "prywatne" || c == "sluzbowe" }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)

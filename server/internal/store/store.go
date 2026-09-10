@@ -55,6 +55,23 @@ type User struct {
 	Email string `json:"email"`
 }
 
+// Category is a user-managed label. A todo's category field is a soft
+// reference to one of these ids; dangling values are resolved on the client.
+type Category struct {
+	ID        string    `json:"id"`
+	OwnerID   string    `json:"ownerId"`
+	Name      string    `json:"name"`
+	Position  float64   `json:"position"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// CategoryUpdate carries optional fields; nil means "leave unchanged".
+type CategoryUpdate struct {
+	Name     *string
+	Position *float64
+}
+
 // Store owns a pgx connection pool.
 type Store struct {
 	pool *pgxpool.Pool
@@ -163,30 +180,32 @@ func (s *Store) ListTodos(ctx context.Context, ownerID string) ([]Todo, error) {
 		return nil, fmt.Errorf("store: list todos: %w", err)
 	}
 	defer rows.Close()
-	return collectTodos(rows)
+	return collect(rows, scanTodo)
 }
 
-// todoRows is the slice of pgx.Rows collectTodos needs; a fake implements it in
-// tests to reach the iteration-error path a live query never produces.
-type todoRows interface {
+// rowScanner is the slice of pgx.Rows that collect needs; a fake implements it
+// in tests to reach the iteration-error path a live query never produces.
+type rowScanner interface {
 	Next() bool
-	Scan(dest ...any) error
 	Err() error
+	Scan(dest ...any) error
 }
 
-func collectTodos(rows todoRows) ([]Todo, error) {
-	todos := make([]Todo, 0)
+// collect drains rows through scan into a non-nil slice, surfacing a
+// mid-iteration driver error.
+func collect[T any](rows rowScanner, scan func(scannable) (T, error)) ([]T, error) {
+	out := make([]T, 0)
 	for rows.Next() {
-		t, err := scanTodo(rows)
+		v, err := scan(rows)
 		if err != nil {
 			return nil, err
 		}
-		todos = append(todos, t)
+		out = append(out, v)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("store: list todos rows: %w", err)
+		return nil, fmt.Errorf("store: iterate rows: %w", err)
 	}
-	return todos, nil
+	return out, nil
 }
 
 // CreateTodo inserts a todo for ownerID with done=false and a strictly
@@ -282,6 +301,62 @@ func reorderInTx(ctx context.Context, tx reorderTx, ownerID string, orderedIDs [
 	return nil
 }
 
+// ListCategories returns the owner's categories, ordered by position then
+// created_at (the client's sort rule), matching observeUserCategories.
+func (s *Store) ListCategories(ctx context.Context, ownerID string) ([]Category, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT id, owner_id, name, position, created_at, updated_at
+		 FROM categories WHERE owner_id = $1 ORDER BY position ASC, created_at ASC`, ownerID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("store: list categories: %w", err)
+	}
+	defer rows.Close()
+	return collect(rows, scanCategory)
+}
+
+// CreateCategory inserts a category for ownerID. The id is always
+// server-generated (a client-supplied id is ignored, as the Firestore wrapper
+// did); position is now_ms, matching the client's Date.now().
+func (s *Store) CreateCategory(ctx context.Context, ownerID, name string) (Category, error) {
+	position := float64(time.Now().UnixMilli())
+	row := s.pool.QueryRow(ctx,
+		`INSERT INTO categories (owner_id, name, position)
+		 VALUES ($1, $2, $3)
+		 RETURNING id, owner_id, name, position, created_at, updated_at`,
+		ownerID, name, position,
+	)
+	return scanCategory(row)
+}
+
+// UpdateCategory applies a partial update to an owned category, or ErrNotFound.
+func (s *Store) UpdateCategory(ctx context.Context, ownerID, id string, upd CategoryUpdate) (Category, error) {
+	row := s.pool.QueryRow(ctx,
+		`UPDATE categories SET
+		   name = COALESCE($3, name),
+		   position = COALESCE($4, position),
+		   updated_at = now()
+		 WHERE id = $1 AND owner_id = $2
+		 RETURNING id, owner_id, name, position, created_at, updated_at`,
+		id, ownerID, upd.Name, upd.Position,
+	)
+	c, err := scanCategory(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Category{}, ErrNotFound
+	}
+	return c, err
+}
+
+// DeleteCategory removes an owned category. It is idempotent (deleting a
+// missing category is not an error), matching Firestore deleteDoc; the client
+// reassigns affected todos to the uncategorized sentinel before calling this.
+func (s *Store) DeleteCategory(ctx context.Context, ownerID, id string) error {
+	if _, err := s.pool.Exec(ctx, `DELETE FROM categories WHERE id = $1 AND owner_id = $2`, id, ownerID); err != nil {
+		return fmt.Errorf("store: delete category: %w", err)
+	}
+	return nil
+}
+
 type scannable interface {
 	Scan(dest ...any) error
 }
@@ -296,6 +371,14 @@ func scanTodo(row scannable) (Todo, error) {
 		return Todo{}, fmt.Errorf("store: decode reminders: %w", err)
 	}
 	return t, nil
+}
+
+func scanCategory(row scannable) (Category, error) {
+	var c Category
+	if err := row.Scan(&c.ID, &c.OwnerID, &c.Name, &c.Position, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		return Category{}, err
+	}
+	return c, nil
 }
 
 // marshalReminders always succeeds: Reminder holds only string/int/bool fields,

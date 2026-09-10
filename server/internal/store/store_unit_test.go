@@ -30,8 +30,8 @@ func (f *fakeRows) Scan(dest ...any) error {
 
 func (f *fakeRows) Err() error { return f.err }
 
-func TestCollectTodosHappy(t *testing.T) {
-	got, err := collectTodos(&fakeRows{remaining: 2})
+func TestCollectHappy(t *testing.T) {
+	got, err := collect(&fakeRows{remaining: 2}, scanTodo)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -40,8 +40,8 @@ func TestCollectTodosHappy(t *testing.T) {
 	}
 }
 
-func TestCollectTodosIterationError(t *testing.T) {
-	_, err := collectTodos(&fakeRows{remaining: 0, err: errors.New("connection lost")})
+func TestCollectIterationError(t *testing.T) {
+	_, err := collect(&fakeRows{remaining: 0, err: errors.New("connection lost")}, scanTodo)
 	if err == nil {
 		t.Fatal("want error surfaced from rows.Err()")
 	}
