@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, act } from '@testing-library/react';
+import { t } from './i18n';
 
 // ── Mocks (all at top level, before any imports of the module under test) ──
 
@@ -47,8 +48,31 @@ vi.mock('./hooks/usePushNotifications', () => ({
 }));
 
 const mockSetMode = vi.fn();
+let mockStorageModeValue: 'local' | 'firebase' | 'api' = 'firebase';
 vi.mock('./hooks/useStorageMode', () => ({
-  useStorageMode: () => ['firebase', mockSetMode] as const,
+  useStorageMode: () => [mockStorageModeValue, mockSetMode] as const,
+}));
+
+const mockApiMe = vi.fn();
+const mockApiLogin = vi.fn();
+const mockApiLogout = vi.fn();
+vi.mock('./services/apiAuth', () => ({
+  me: (...a: unknown[]) => mockApiMe(...a),
+  login: (...a: unknown[]) => mockApiLogin(...a),
+  logout: (...a: unknown[]) => mockApiLogout(...a),
+}));
+
+vi.mock('./repos/apiTodoRepo', () => ({
+  createApiTodoRepo: () => ({
+    create: vi.fn(), update: vi.fn(), toggleDone: vi.fn(),
+    delete: vi.fn(), reorder: vi.fn(), observe: vi.fn(() => () => {}),
+  }),
+}));
+
+vi.mock('./repos/apiCategoryRepo', () => ({
+  createApiCategoryRepo: () => ({
+    create: vi.fn(), update: vi.fn(), delete: vi.fn(), observe: vi.fn(() => () => {}),
+  }),
 }));
 
 vi.mock('./hooks/useOnlineStatus', () => ({
@@ -110,6 +134,7 @@ describe('App regression tests', () => {
     mockPushDisable.mockResolvedValue(undefined);
     mockPushEnable.mockResolvedValue(undefined);
     mockLogout.mockResolvedValue(undefined);
+    mockStorageModeValue = 'firebase';
     // Default: observeAuth calls back with a logged-in user immediately
     mockObserveAuth.mockImplementation((cb: (user: unknown) => void) => {
       cb({ uid: 'user-1', email: 'test@test.com' });
@@ -186,6 +211,29 @@ describe('App regression tests', () => {
         fireEvent.click(signOutBtn);
       });
       expect(mockLogout).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('api mode', () => {
+    beforeEach(() => {
+      mockStorageModeValue = 'api';
+    });
+
+    it('calls apiAuth.me and shows the login screen when unauthenticated', async () => {
+      mockApiMe.mockResolvedValue(null);
+      const App = await importApp();
+      const { findByRole } = render(<App />);
+      expect(
+        await findByRole('button', { name: t.loginSubmit })
+      ).toBeInTheDocument();
+      expect(mockApiMe).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the list shell once me resolves a user', async () => {
+      mockApiMe.mockResolvedValue({ id: 'u1', email: 'api@test.com' });
+      const App = await importApp();
+      const { findByTestId } = render(<App />);
+      expect(await findByTestId('mainlist-mock')).toBeInTheDocument();
     });
   });
 });

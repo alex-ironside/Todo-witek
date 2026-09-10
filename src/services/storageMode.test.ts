@@ -25,11 +25,22 @@ describe('storageMode', () => {
     expect(getStorageMode()).toBe('local');
   });
 
+  it('reads api when set', () => {
+    localStorage.setItem(STORAGE_MODE_KEY, 'api');
+    expect(getStorageMode()).toBe('api');
+  });
+
   it('setStorageMode persists the value', () => {
     setStorageMode('firebase');
     expect(localStorage.getItem(STORAGE_MODE_KEY)).toBe('firebase');
     setStorageMode('local');
     expect(localStorage.getItem(STORAGE_MODE_KEY)).toBe('local');
+  });
+
+  it('setStorageMode persists api and round-trips through getStorageMode', () => {
+    setStorageMode('api');
+    expect(localStorage.getItem(STORAGE_MODE_KEY)).toBe('api');
+    expect(getStorageMode()).toBe('api');
   });
 
   it('onStorageModeChange fires on setStorageMode in same tab', () => {

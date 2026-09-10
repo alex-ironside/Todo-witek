@@ -3,13 +3,14 @@ import { render, fireEvent } from '@testing-library/react';
 import StorageGroup from './StorageGroup';
 
 describe('StorageGroup', () => {
-  it('renders title and both segment labels', () => {
+  it('renders title and all segment labels', () => {
     const { getByText } = render(
       <StorageGroup mode="local" onChange={() => {}} />
     );
     expect(getByText('Przechowywanie')).toBeInTheDocument();
     expect(getByText('Lokalnie')).toBeInTheDocument();
     expect(getByText('Chmura')).toBeInTheDocument();
+    expect(getByText('Serwer')).toBeInTheDocument();
   });
 
   it('marks active segment by mode prop', () => {
@@ -18,6 +19,15 @@ describe('StorageGroup', () => {
     );
     expect(getByText('Chmura').getAttribute('aria-pressed')).toBe('true');
     expect(getByText('Lokalnie').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('marks the api segment as active when mode is api and the others inactive', () => {
+    const { getByText } = render(
+      <StorageGroup mode="api" onChange={() => {}} />
+    );
+    expect(getByText('Serwer').getAttribute('aria-pressed')).toBe('true');
+    expect(getByText('Lokalnie').getAttribute('aria-pressed')).toBe('false');
+    expect(getByText('Chmura').getAttribute('aria-pressed')).toBe('false');
   });
 
   it('clicking inactive segment calls onChange with the right internal value', () => {
@@ -32,5 +42,14 @@ describe('StorageGroup', () => {
     rerender(<StorageGroup mode="firebase" onChange={onChange} />);
     fireEvent.click(getByText('Lokalnie'));
     expect(onChange).toHaveBeenCalledWith('local');
+  });
+
+  it('clicking the api segment from another mode calls onChange with api', () => {
+    const onChange = vi.fn();
+    const { getByText } = render(
+      <StorageGroup mode="local" onChange={onChange} />
+    );
+    fireEvent.click(getByText('Serwer'));
+    expect(onChange).toHaveBeenCalledWith('api');
   });
 });

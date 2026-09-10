@@ -54,6 +54,13 @@ Todo PWA backed by Firebase. React + Vite, deploys to GitHub Pages.
    npm test
    ```
 
+## Environment variables
+
+- `VITE_API_URL` — base URL of the Go backend used by the `api` storage
+  mode (e.g. `http://localhost:8080`). Read by `src/services/apiClient.ts`;
+  omit it to default to same-origin requests. Not needed for `local` or
+  `firebase` modes.
+
 ## Deploy to GitHub Pages
 
 The included `.github/workflows/deploy.yml` builds on push to `main` and

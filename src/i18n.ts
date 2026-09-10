@@ -24,6 +24,7 @@ export const t = {
   // Storage mode toggle
   modeLocal: 'Lokalnie',
   modeCloud: 'Chmura',
+  modeApi: 'Serwer',
   modeGroupLabel: 'Tryb przechowywania',
 
   // Transfer local → cloud

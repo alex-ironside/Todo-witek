@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { useAuth } from './hooks/useAuth';
+import { useApiAuth } from './hooks/useApiAuth';
 import { useTodos } from './hooks/useTodos';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useStorageMode } from './hooks/useStorageMode';
@@ -11,8 +12,10 @@ import { logout } from './firebase/auth';
 import { isConfigured } from './firebase/config';
 import { createLocalTodoRepo } from './repos/localTodoRepo';
 import { createFirebaseTodoRepo } from './repos/firebaseTodoRepo';
+import { createApiTodoRepo } from './repos/apiTodoRepo';
 import { createLocalCategoryRepo } from './repos/localCategoryRepo';
 import { createFirebaseCategoryRepo } from './repos/firebaseCategoryRepo';
+import { createApiCategoryRepo } from './repos/apiCategoryRepo';
 import {
   createReminderScheduler,
   type ReminderScheduler,
@@ -24,6 +27,7 @@ import {
 import type { StorageMode } from './services/storageMode';
 import type { Todo, TodoRepository } from './types';
 import AuthRouter from './components/auth/AuthRouter';
+import LoginScreen from './components/auth/LoginScreen';
 import MainList from './components/main-list/MainList';
 import UpdatePrompt from './components/UpdatePrompt';
 import LoadingCheck from './components/LoadingCheck';
@@ -34,7 +38,9 @@ export default function App() {
 
   return (
     <>
-      {mode === 'firebase' && !isConfigured() ? (
+      {mode === 'api' ? (
+        <ApiApp mode={mode} onModeChange={setMode} />
+      ) : mode === 'firebase' && !isConfigured() ? (
         <FirebaseNotConfigured mode={mode} onModeChange={setMode} />
       ) : mode === 'local' ? (
         <LocalApp mode={mode} onModeChange={setMode} />
@@ -95,6 +101,60 @@ function LocalApp({ mode, onModeChange }: ModeProps) {
         online={online}
         identity={t.identityLocal}
         signOut={null}
+        repo={repo}
+      />
+    </RepoProvider>
+  );
+}
+
+function ApiApp({ mode, onModeChange }: ModeProps) {
+  const { user, loading, signIn, signOut } = useApiAuth();
+
+  if (loading) {
+    return <LoadingCheck />;
+  }
+  if (!user) {
+    return (
+      <LoginScreen
+        login={signIn}
+        onUseLocal={() => onModeChange('local')}
+      />
+    );
+  }
+  return (
+    <ApiAuthenticated
+      email={user.email}
+      signOut={signOut}
+      mode={mode}
+      onModeChange={onModeChange}
+    />
+  );
+}
+
+interface ApiAuthenticatedProps extends ModeProps {
+  email: string;
+  signOut: () => Promise<void>;
+}
+
+function ApiAuthenticated({
+  email,
+  signOut,
+  mode,
+  onModeChange,
+}: ApiAuthenticatedProps) {
+  const repo = useMemo(() => createApiTodoRepo(), []);
+  const categoryRepo = useMemo(() => createApiCategoryRepo(), []);
+  const online = useOnlineStatus();
+
+  return (
+    <RepoProvider repo={repo} categoryRepo={categoryRepo}>
+      <Shell
+        mode={mode}
+        onModeChange={onModeChange}
+        online={online}
+        identity={email}
+        email={email}
+        signOut={signOut}
         repo={repo}
       />
     </RepoProvider>

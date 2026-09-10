@@ -81,6 +81,49 @@ describe('LoginScreen', () => {
     expect(onUseLocal).toHaveBeenCalledTimes(1);
   });
 
+  it('calls the injected login prop instead of the firebase login when provided', async () => {
+    const user = userEvent.setup();
+    const injectedLogin = vi.fn().mockResolvedValue(undefined);
+    render(
+      <LoginScreen
+        onForgot={vi.fn()}
+        onUseLocal={vi.fn()}
+        login={injectedLogin}
+      />
+    );
+    await user.type(screen.getByLabelText(t.loginEmail), 'a@b.com');
+    await user.type(screen.getByLabelText(t.loginPassword), 'pw');
+    await user.click(screen.getByRole('button', { name: t.loginSubmit }));
+    expect(injectedLogin).toHaveBeenCalledWith('a@b.com', 'pw');
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it('shows the form error when the injected login prop rejects', async () => {
+    const user = userEvent.setup();
+    const injectedLogin = vi.fn().mockRejectedValue(new Error('bad-login'));
+    render(
+      <LoginScreen
+        onForgot={vi.fn()}
+        onUseLocal={vi.fn()}
+        login={injectedLogin}
+      />
+    );
+    await user.type(screen.getByLabelText(t.loginEmail), 'a@b.com');
+    await user.type(screen.getByLabelText(t.loginPassword), 'pw');
+    await user.click(screen.getByRole('button', { name: t.loginSubmit }));
+    expect(await screen.findByText('bad-login')).toBeInTheDocument();
+  });
+
+  it('renders the forgot-password link when onForgot is given', () => {
+    renderScreen();
+    expect(screen.getByRole('button', { name: t.loginForgot })).toBeInTheDocument();
+  });
+
+  it('omits the forgot-password link when onForgot is absent', () => {
+    render(<LoginScreen onUseLocal={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: t.loginForgot })).not.toBeInTheDocument();
+  });
+
   it('clears the email error when the user resumes typing email', async () => {
     const user = userEvent.setup();
     renderScreen();

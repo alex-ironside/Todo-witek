@@ -1,12 +1,12 @@
 import type { Unsubscribe } from '../types';
 
-export type StorageMode = 'local' | 'firebase';
+export type StorageMode = 'local' | 'firebase' | 'api';
 
 export const STORAGE_MODE_KEY = 'todo-witek:storage-mode';
 const CHANGE_EVENT = 'todo-witek:storage-mode-changed';
 
 const isMode = (v: string | null): v is StorageMode =>
-  v === 'local' || v === 'firebase';
+  v === 'local' || v === 'firebase' || v === 'api';
 
 export const getStorageMode = (): StorageMode => {
   if (typeof localStorage === 'undefined') return 'local';

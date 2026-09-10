@@ -19,6 +19,7 @@ export default function StorageGroup({ mode, onChange }: StorageGroupProps) {
           options={[
             { value: 'local', label: t.modeLocal },
             { value: 'firebase', label: t.modeCloud },
+            { value: 'api', label: t.modeApi },
           ]}
         />
       </div>

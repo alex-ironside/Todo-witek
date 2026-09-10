@@ -1,17 +1,22 @@
 import { useState, type FormEvent } from 'react';
 import AuthShell from './AuthShell';
 import Field from './Field';
-import { login } from '../../firebase/auth';
+import { login as firebaseLogin } from '../../firebase/auth';
 import { t } from '../../i18n';
 
 interface Props {
-  onForgot: () => void;
+  onForgot?: () => void;
   onUseLocal: () => void;
+  login?: (email: string, password: string) => Promise<unknown>;
 }
 
 // Login form per redesign spec section 5. Email + password with inline
 // per-field validation, Firebase login, two text links beneath.
-export default function LoginScreen({ onForgot, onUseLocal }: Props) {
+export default function LoginScreen({
+  onForgot,
+  onUseLocal,
+  login = firebaseLogin,
+}: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -88,9 +93,11 @@ export default function LoginScreen({ onForgot, onUseLocal }: Props) {
           {t.loginSubmit}
         </button>
         <div className="flex flex-col items-center gap-2 text-textDim text-sm pt-2">
-          <button type="button" onClick={onForgot} className="py-1">
-            {t.loginForgot}
-          </button>
+          {onForgot && (
+            <button type="button" onClick={onForgot} className="py-1">
+              {t.loginForgot}
+            </button>
+          )}
           <button type="button" onClick={onUseLocal} className="py-1">
             {t.loginUseLocal}
           </button>
