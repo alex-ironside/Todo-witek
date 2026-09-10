@@ -70,7 +70,7 @@ export default function OpenTodoList({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <ul className="divide-y divide-hairlineSoft">
+        <ul data-testid="open-todo-list" className="divide-y divide-hairlineSoft">
           {todos.map((todo) => (
             <SortableItem
               key={todo.id}

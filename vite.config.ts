@@ -11,6 +11,16 @@ import { firebaseConfig } from './src/firebase/config';
 // Override with VITE_BASE if your repo name differs.
 const base = process.env.VITE_BASE || '/todo-witek/';
 
+// vite preview proxies API paths to the Go backend so the e2e-built app runs
+// same-origin (no CORS, and the SameSite=Lax session cookie survives).
+const apiTarget = process.env.E2E_API_TARGET || 'http://localhost:8080';
+const apiProxy = {
+  '/auth': apiTarget,
+  '/todos': apiTarget,
+  '/categories': apiTarget,
+  '/health': apiTarget,
+};
+
 function stampFirebaseSwPlugin() {
   return {
     name: 'stamp-firebase-sw',
@@ -32,6 +42,9 @@ function stampFirebaseSwPlugin() {
 
 export default defineConfig({
   base,
+  preview: {
+    proxy: apiProxy,
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -68,6 +81,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: false,
-    exclude: ['scripts/**', 'node_modules/**'],
+    exclude: ['scripts/**', 'node_modules/**', 'e2e/**'],
   },
 });

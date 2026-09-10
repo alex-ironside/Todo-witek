@@ -14,6 +14,11 @@ dist-ssr
 
 coverage
 
+# Playwright e2e
+test-results
+playwright-report
+e2e/.tmp
+
 # CodeGraph local index (rebuildable cache)
 .codegraph/
 
