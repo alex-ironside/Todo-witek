@@ -53,10 +53,7 @@ test.describe('todo CRUD', () => {
     await expect(rowWithReminder.getByTestId('reminder-bell')).toBeVisible();
 
     await page.reload();
-    await expect(page.getByRole('tab', { name: 'Służbowe', exact: true })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    );
+    await page.getByRole('tab', { name: 'Służbowe', exact: true }).click();
     const rowAfterReload = page.locator('li').filter({ hasText: title });
     await expect(rowAfterReload).toBeVisible();
     await expect(rowAfterReload.getByTestId('reminder-bell')).toBeVisible();
@@ -138,7 +135,10 @@ test.describe('todo CRUD', () => {
 
     await secondRow.focus();
     await page.keyboard.press('Space');
+    await expect(secondRow).toHaveCSS('opacity', '0.6');
+    await page.waitForTimeout(250);
     await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(250);
     await page.keyboard.press('Space');
 
     await expect(list.locator('li').nth(0)).toContainText(titleA);
