@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "distribution": "claude",
+  "productName": "Claude Code",
+  "configNextStep": "open Claude Code in this project and run `/aidlc --doctor`",
+  "name": "claude",
+  "harnessDir": ".claude",
+  "rulesSubdir": "rules",
+  "providers": {
+    "schemaVersion": 1,
+    "provider": "other",
+    "acknowledged": true,
+    "pendingActions": [
+      {
+        "id": "non-bedrock-provider-configuration",
+        "status": "done"
+      }
+    ]
+  },
+  "runtime": {
+    "schemaVersion": 1,
+    "baselinePath": "C:\\Program Files\\Microsoft\\jdk-21.0.10.7-hotspot\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\cursor\\resources\\app\\bin;C:\\Program Files\\dotnet\\;C:\\Users\\alex\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\RedHat\\Podman\\;C:\\Program Files\\GitHub CLI\\;C:\\Program Files\\Tailscale\\;C:\\Program Files\\Go\\bin;C:\\Users\\alex\\AppData\\Local\\aidlc\\bin;C:\\Users\\alex\\AppData\\Local\\pnpm\\bin;C:\\Program Files\\Microsoft\\jdk-21.0.10.7-hotspot\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\cursor\\resources\\app\\bin;C:\\Program Files\\dotnet\\;C:\\Users\\alex\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\RedHat\\Podman\\;C:\\Program Files\\GitHub CLI\\;C:\\Program Files\\Apache\\Maven\\bin;C:\\Users\\alex\\.cargo\\bin;C:\\Users\\alex\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\alex\\AppData\\Roaming\\npm;C:\\Users\\alex\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Users\\alex\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\alex\\AppData\\Local\\Programs\\Ollama;C:\\texlive\\2025\\bin\\windows;C:\\Users\\alex\\AppData\\Local\\Programs\\Antigravity\\bin;C:\\Users\\alex\\.local\\bin;C:\\Users\\alex\\AppData\\Local\\Microsoft\\WinGet\\Packages\\jqlang.jq_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\\Program Files\\Microsoft\\jdk-21.0.10.7-hotspot\\bin;C:\\Program Files (x86)\\GnuWin32\\bin;C:\\Users\\alex\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\LocalCache\\local-packages\\Python313\\Scripts;C:\\Users\\alex\\.lmstudio\\bin;C:\\Users\\alex\\go\\bin;C:\\Users\\alex\\AppData\\Local\\Microsoft\\WinGet\\Packages\\marlocarlo.psmux_Microsoft.Winget.Source_8wekyb3d8bbwe;C:\\Users\\alex\\.dotnet\\tools;C:/Users/alex/AppData/Local/Programs/codebase-memory-mcp;C:\\Users\\alex\\AppData\\Local\\Programs\\Antigravity IDE\\bin;C:\\Users\\alex\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin",
+    "aidlcPath": "C:\\Users\\alex\\AppData\\Local\\aidlc\\bin\\aidlc.cmd",
+    "cliPath": "C:\\Users\\alex\\.local\\bin\\claude.exe"
+  }
+}
